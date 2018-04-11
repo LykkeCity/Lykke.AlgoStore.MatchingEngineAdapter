@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>Lykke.AlgoStore.MatchingEngineAdapter.Core</AssemblyName>
+    <RootNamespace>Lykke.AlgoStore.MatchingEngineAdapter.Core</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Domain\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lykke.Common" Version="6.1.1" />
+  </ItemGroup>
+
+</Project>
