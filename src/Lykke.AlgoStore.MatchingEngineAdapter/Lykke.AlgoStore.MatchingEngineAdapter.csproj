@@ -33,7 +33,6 @@
     <PackageReference Include="Lykke.SettingsReader" Version="2.2.0" />
     <PackageReference Include="Lykke.SlackNotification.AzureQueue" Version="2.0.2" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.0.2" />
   </ItemGroup>
   
   <ItemGroup>
