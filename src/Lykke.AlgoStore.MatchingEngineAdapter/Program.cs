@@ -39,7 +39,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
                 IsAliveCheck();
 
-                Console.ReadKey(true);
+                Console.In.ReadLineAsync().GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
