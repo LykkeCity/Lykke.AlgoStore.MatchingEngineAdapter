@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -21,19 +22,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 {
     public class Startup
     {
-        public IHostingEnvironment Environment { get; }
         public IContainer ApplicationContainer { get; private set; }
         public IConfigurationRoot Configuration { get; }
         public ILog Log { get; private set; }
 
-        public Startup(IHostingEnvironment env)
+        public Startup()
         {
             var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
+                .SetBasePath(Directory.GetCurrentDirectory())
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
-
-            Environment = env;
         }
 
         public IServiceProvider ConfigureServices(IServiceCollection services)

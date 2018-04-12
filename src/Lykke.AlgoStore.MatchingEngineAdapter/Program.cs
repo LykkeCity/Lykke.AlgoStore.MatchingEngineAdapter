@@ -1,7 +1,12 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
+using Autofac;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
+using Lykke.Common.Api.Contract.Responses;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter
@@ -12,25 +17,25 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
         public static async Task Main(string[] args)
         {
-            Console.WriteLine($"{PlatformServices.Default.Application.ApplicationName} version {PlatformServices.Default.Application.ApplicationVersion}");
+            Console.WriteLine(
+                $"{PlatformServices.Default.Application.ApplicationName} version {PlatformServices.Default.Application.ApplicationVersion}");
 #if DEBUG
             Console.WriteLine("Is DEBUG");
 #else
             Console.WriteLine("Is RELEASE");
-#endif           
+#endif
             Console.WriteLine($"ENV_INFO: {EnvInfo}");
 
             try
             {
-                var host = new WebHostBuilder()
-                    .UseKestrel()
-                    .UseUrls("http://*:5000")
-                    .UseContentRoot(Directory.GetCurrentDirectory())
-                    .UseStartup<Startup>()
-                    .UseApplicationInsights()
-                    .Build();
+                var services = new ServiceCollection();
+                var startup = new Startup();
 
-                await host.RunAsync();
+                startup.ConfigureServices(services);
+
+                IsAliveCheck(startup);
+
+                Console.ReadKey();
             }
             catch (Exception ex)
             {
@@ -44,14 +49,35 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
                 Console.WriteLine($"Process will be terminated in {delay}. Press any key to terminate immediately.");
 
                 await Task.WhenAny(
-                               Task.Delay(delay),
-                               Task.Run(() =>
-                               {
-                                   Console.ReadKey(true);
-                               }));
+                    Task.Delay(delay),
+                    Task.Run(() => { Console.ReadKey(true); }));
             }
 
             Console.WriteLine("Terminated");
+        }
+
+        private static void IsAliveCheck(Startup startup)
+        {
+            var healthService = startup.ApplicationContainer.Resolve<IHealthService>();
+            var healthViloationMessage = healthService.GetHealthViolationMessage();
+
+            if (healthViloationMessage != null)
+            {
+                Console.WriteLine($"Service is unhealthy: {healthViloationMessage}");
+            }
+            else
+            {
+                Console.WriteLine(
+                    $"Name = {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationName}");
+                Console.WriteLine(
+                    $"Version = {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
+                Console.WriteLine($"Env = {Program.EnvInfo}");
+#if DEBUG
+                Console.WriteLine("IsDebug = true");
+#else
+                    Console.WriteLine("IsDebug = false");
+#endif
+            }
         }
     }
 }
