@@ -1,4 +1,4 @@
 FROM microsoft/aspnetcore:2.0
 WORKDIR /app
 COPY . .
-ENTRYPOINT ["dotnet", "Lykke.Lykke.AlgoStore.MatchingEngineAdapter.dll"]
+ENTRYPOINT ["dotnet", "Lykke.AlgoStore.MatchingEngineAdapter.dll"]
