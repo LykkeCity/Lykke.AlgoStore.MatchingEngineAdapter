@@ -1,11 +1,9 @@
 ﻿using System;
-using System.IO;
-using System.Net;
+using System.Runtime.Loader;
+using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
-using Lykke.Common.Api.Contract.Responses;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.PlatformAbstractions;
 
@@ -13,10 +11,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 {
     internal sealed class Program
     {
+        private static Startup _startup;
+
         public static string EnvInfo => Environment.GetEnvironmentVariable("ENV_INFO");
 
         public static async Task Main(string[] args)
         {
+            AssemblyLoadContext.Default.Unloading += Application_Shutdown;
+
             Console.WriteLine(
                 $"{PlatformServices.Default.Application.ApplicationName} version {PlatformServices.Default.Application.ApplicationVersion}");
 #if DEBUG
@@ -29,11 +31,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
             try
             {
                 var services = new ServiceCollection();
-                var startup = new Startup();
+                _startup = new Startup();
 
-                startup.ConfigureServices(services);
+                _startup.ConfigureServices(services);
 
-                IsAliveCheck(startup);
+                _startup.Log.WriteMonitorAsync("", $"Env: {EnvInfo}", "Started").Wait();
+
+                IsAliveCheck();
 
                 Console.ReadKey();
             }
@@ -56,9 +60,17 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
             Console.WriteLine("Terminated");
         }
 
-        private static void IsAliveCheck(Startup startup)
+        private static void Application_Shutdown(AssemblyLoadContext obj)
         {
-            var healthService = startup.ApplicationContainer.Resolve<IHealthService>();
+            _startup.Log.WriteMonitorAsync("", $"Env: {EnvInfo}", "Closed").Wait();
+
+            //Need to sleep for 5s in order for log to get saved
+            Thread.Sleep(5000);
+        }
+
+        private static void IsAliveCheck()
+        {
+            var healthService = _startup.ApplicationContainer.Resolve<IHealthService>();
             var healthViloationMessage = healthService.GetHealthViolationMessage();
 
             if (healthViloationMessage != null)
@@ -68,10 +80,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
             else
             {
                 Console.WriteLine(
-                    $"Name = {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationName}");
+                    $"Name = {PlatformServices.Default.Application.ApplicationName}");
+
                 Console.WriteLine(
-                    $"Version = {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
-                Console.WriteLine($"Env = {Program.EnvInfo}");
+                    $"Version = {PlatformServices.Default.Application.ApplicationVersion}");
+
+                Console.WriteLine($"Env = {EnvInfo}");
 #if DEBUG
                 Console.WriteLine("IsDebug = true");
 #else
