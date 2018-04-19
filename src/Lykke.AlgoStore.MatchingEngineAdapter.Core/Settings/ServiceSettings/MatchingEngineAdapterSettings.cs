@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings.ServiceSettings
 {
     [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
     public class MatchingEngineAdapterSettings
