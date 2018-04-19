@@ -83,7 +83,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             await CheckResponseAndThrowIfNull(response);
             if (response.Status == MeStatusCodes.Ok)
             {
-                return ResponseModel<double>.CreateOk(response.Price);
+                return ResponseModel<double>.CreateOk(response.Price, order.Id);
             }
             return ConvertToApiModel<double>(response.Status);
         }

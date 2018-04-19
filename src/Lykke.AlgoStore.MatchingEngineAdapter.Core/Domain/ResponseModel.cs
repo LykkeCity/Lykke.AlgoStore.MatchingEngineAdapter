@@ -93,12 +93,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain
     public class ResponseModel<T> : ResponseModel
     {
         public T Result { get; set; }
+        public string OrderId { get; set; }
 
-        public static ResponseModel<T> CreateOk(T result)
+        public static ResponseModel<T> CreateOk(T result, string orderId )
         {
             return new ResponseModel<T>
             {
-                Result = result
+                Result = result,
+                OrderId = orderId
             };
         }
 
