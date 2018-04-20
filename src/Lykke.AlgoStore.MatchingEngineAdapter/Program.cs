@@ -39,6 +39,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
                 IsAliveCheck();
 
+                // Start the listening service
+                var listeningService = _startup.ApplicationContainer.Resolve<IListeningService>();
+                listeningService.Start();
+
                 Console.In.ReadLineAsync().GetAwaiter().GetResult();
             }
             catch (Exception ex)
