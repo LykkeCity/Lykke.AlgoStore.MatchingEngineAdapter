@@ -1,4 +1,6 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
+﻿using Common.Log;
+using JetBrains.Annotations;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
@@ -15,6 +17,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private readonly Dictionary<Type, Action<IRequestInfo>> _messageHandlers = new Dictionary<Type, Action<IRequestInfo>>();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private readonly IRequestQueue _requestQueue;
+        private readonly ILog _log;
 
         private Thread _thread;
 
@@ -32,7 +35,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="requestQueue">A <see cref="IRequestQueue"/></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ConsumingWorker(IRequestQueue requestQueue)
+        public ConsumingWorker(IRequestQueue requestQueue, [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException();
 
@@ -40,6 +43,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
             _thread = new Thread(DoWork) { Priority = ThreadPriority.Highest };
             _thread.Start(_cts.Token);
+
+            _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
         /// <summary>
@@ -54,7 +59,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         {
             if (_isDisposed) return;
 
-            if(isDisposing)
+            if (isDisposing)
             {
                 _cts.Cancel();
                 _thread.Interrupt();
@@ -68,7 +73,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         {
             var cancellationToken = (CancellationToken)cancellationTokenObj;
 
-            while(!cancellationToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -80,8 +85,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     if (_messageHandlers.ContainsKey(messageType))
                         _messageHandlers[messageType](request);
                 }
-                catch(OperationCanceledException)
+                catch (OperationCanceledException exception)
                 {
+                    _log.WriteErrorAsync(nameof(ConsumingWorker), nameof(DoWork), null, exception).Wait();
                     return;
                 }
             }

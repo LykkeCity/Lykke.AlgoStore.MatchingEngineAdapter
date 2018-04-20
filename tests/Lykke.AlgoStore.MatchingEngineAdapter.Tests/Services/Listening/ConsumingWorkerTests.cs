@@ -1,12 +1,11 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
+﻿using Common.Log;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
 using Moq;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
@@ -18,8 +17,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         public void ConsumingWorker_SubmitsCorrectResponse_ForPingMessage()
         {
             var requestQueueMock = Given_CorrectRequestQueueMock();
+            var logMock = Given_Log();
 
-            var consumingWorker = new ConsumingWorker(requestQueueMock.Object);
+            var consumingWorker = new ConsumingWorker(requestQueueMock.Object, logMock);
 
             Thread.Sleep(1000);
 
@@ -62,6 +62,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             requestInfoMock.Setup(r => r.Reply(MeaResponseType.Pong, pingRequest));
 
             return requestInfoMock.Object;
+        }
+
+        private ILog Given_Log()
+        {
+            var log = new Mock<ILog>();
+            return log.Object;
         }
     }
 }
