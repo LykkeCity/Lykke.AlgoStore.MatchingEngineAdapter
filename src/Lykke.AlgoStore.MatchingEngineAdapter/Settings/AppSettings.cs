@@ -1,8 +1,8 @@
 ﻿using JetBrains.Annotations;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings.ServiceSettings;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings.SlackNotifications;
+using Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings;
+using Lykke.AlgoStore.MatchingEngineAdapter.Settings.SlackNotifications;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings
 {
     [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
     public class AppSettings
@@ -11,6 +11,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings
         public MatchingEngineSettings MatchingEngineClient { get; set; }
         public SlackNotificationsSettings SlackNotifications { get; set; }
         public FeeCalculatorServiceClient FeeCalculatorServiceClient { get; set; }
+        public AssetsServiceClient AssetsServiceClient { get; set; }
         public FeeSettings FeeSettings { get; set; }
     }
 }

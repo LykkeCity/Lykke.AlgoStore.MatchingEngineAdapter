@@ -1,6 +1,6 @@
 ﻿using Lykke.SettingsReader.Attributes;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings.ServiceSettings
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
 {
     public class DbSettings
     {

@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Autofac;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings;
+using Lykke.AlgoStore.MatchingEngineAdapter.Settings;
 using Lykke.SettingsReader;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
@@ -29,7 +27,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
 
             builder.RegisterType<Services.MatchingEngineAdapter>()
                 .As<IMatchingEngineAdapter>()
-                .WithParameter(TypedParameter.From(_settings.CurrentValue.FeeSettings))
+                .WithParameter(TypedParameter.From(_settings.CurrentValue.FeeSettings.TargetClientId.Hft))
                 .SingleInstance();
         }
     }

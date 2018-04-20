@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings.SlackNotifications
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.SlackNotifications
 {
     [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
     public class SlackNotificationsSettings

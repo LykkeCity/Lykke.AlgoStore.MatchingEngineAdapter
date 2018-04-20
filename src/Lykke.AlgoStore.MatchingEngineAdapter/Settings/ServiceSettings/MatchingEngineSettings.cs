@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
+﻿using System.Net;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings.ServiceSettings
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
 {
     public class MatchingEngineSettings
     {

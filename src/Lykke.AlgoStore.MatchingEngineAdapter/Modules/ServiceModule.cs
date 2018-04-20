@@ -2,8 +2,8 @@
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services;
+using Lykke.AlgoStore.MatchingEngineAdapter.Settings;
 using Lykke.SettingsReader;
 using Microsoft.Extensions.DependencyInjection;
 

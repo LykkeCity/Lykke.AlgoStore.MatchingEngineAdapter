@@ -5,7 +5,6 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings.ServiceSettings;
 using Lykke.MatchingEngine.Connector.Abstractions.Models;
 using Lykke.MatchingEngine.Connector.Abstractions.Services;
 using Lykke.Service.Assets.Client;
@@ -22,7 +21,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         //private readonly IRepository<LimitOrderState> _orderStateRepository;
         private readonly IFeeCalculatorClient _feeCalculatorClient;
         private readonly IAssetsService _assetsService;
-        private readonly FeeSettings _feeSettings;
+        private readonly string _feeSettingsTargetClientIdHft;
 
         private static readonly Dictionary<MeStatusCodes, ResponseModel.ErrorCodeType> StatusCodesMap = new Dictionary<MeStatusCodes, ResponseModel.ErrorCodeType>
         {
@@ -45,14 +44,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         public MatchingEngineAdapter(IMatchingEngineClient matchingEngineClient,
             IFeeCalculatorClient feeCalculatorClient,
             IAssetsService assetsService,
-            FeeSettings feeSettings,
+            string feeSettingsTargetClientIdHft,
             [NotNull] ILog log)
         {
             _matchingEngineClient =
                 matchingEngineClient ?? throw new ArgumentNullException(nameof(matchingEngineClient));
             _feeCalculatorClient = feeCalculatorClient ?? throw new ArgumentNullException(nameof(feeCalculatorClient));
             _assetsService = assetsService ?? throw new ArgumentNullException(nameof(assetsService));
-            _feeSettings = feeSettings ?? throw new ArgumentNullException(nameof(feeSettings));
+            _feeSettingsTargetClientIdHft = feeSettingsTargetClientIdHft ?? throw new ArgumentNullException(nameof(_feeSettingsTargetClientIdHft));
             _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
@@ -88,6 +87,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             return ConvertToApiModel<double>(response.Status);
         }
 
+        //This method is to be used in the future when implementing Limit orders.
         //public async Task<ResponseModel<Guid>> PlaceLimitOrderAsync(string clientId, string assetPairId, OrderAction orderAction, double volume,
         //    double price, bool cancelPreviousOrders = false)
         //{
@@ -159,7 +159,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
                     ? (int)FeeSizeType.ABSOLUTE
                     : (int)FeeSizeType.PERCENTAGE,
                 SourceClientId = clientId,
-                TargetClientId = fee.TargetWalletId ?? _feeSettings.TargetClientId.Hft,
+                TargetClientId = fee.TargetWalletId ?? _feeSettingsTargetClientIdHft,
                 Type = fee.Amount == 0m
                     ? (int)MarketOrderFeeType.NO_FEE
                     : (int)MarketOrderFeeType.CLIENT_FEE,
@@ -169,6 +169,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             };
         }
 
+        //To be used in future when implementing Limit orders
         //private async Task<LimitOrderFeeModel> GetLimitOrderFee(string clientId, string assetPairId, OrderAction orderAction)
         //{
         //    var assetPair = await _assetsService.AssetPairGetAsync(assetPairId);
@@ -179,7 +180,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         //        MakerSize = (double)fee.MakerFeeSize,
         //        TakerSize = (double)fee.TakerFeeSize,
         //        SourceClientId = clientId,
-        //        TargetClientId = _feeSettings.TargetClientId.Hft,
+        //        TargetClientId = _feeSettingsTargetClientIdHft,
         //        Type = fee.MakerFeeSize == 0m && fee.TakerFeeSize == 0m
         //            ? (int)LimitOrderFeeType.NO_FEE
         //            : (int)LimitOrderFeeType.CLIENT_FEE,

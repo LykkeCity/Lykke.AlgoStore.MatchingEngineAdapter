@@ -4,7 +4,7 @@ using System.Text;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Settings;
+using Lykke.AlgoStore.MatchingEngineAdapter.Settings;
 using Lykke.Service.Assets.Client;
 using Lykke.Service.FeeCalculator.Client;
 using Lykke.SettingsReader;
@@ -29,6 +29,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
         protected override void Load(ContainerBuilder builder)
         {
             builder.RegisterFeeCalculatorClient(_settings.CurrentValue.FeeCalculatorServiceClient.ServiceUrl, _log);
+
+            _services.RegisterAssetsClient(AssetServiceSettings.Create(
+                new Uri(_settings.CurrentValue.AssetsServiceClient.ServiceUrl),
+                _settings.CurrentValue.AlgoStoreMatchingEngineAdapter.CacheExpirationPeriod));
 
             builder.Populate(_services);
         }
