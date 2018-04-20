@@ -6,5 +6,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
     public class MatchingEngineAdapterSettings
     {
         public DbSettings Db { get; set; }
+        public ListenerSettings Listener { get; set; }
     }
 }

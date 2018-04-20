@@ -50,6 +50,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
 
             builder.RegisterType<ListeningService>()
                 .As<IListeningService>()
+                .WithParameter(TypedParameter.From(_settings.CurrentValue.Listener.Port))
                 .SingleInstance();
 
             builder.RegisterType<ProducerLoadBalancer>()
