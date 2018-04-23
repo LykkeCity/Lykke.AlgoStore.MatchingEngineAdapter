@@ -1,6 +1,9 @@
 ﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
+using Common;
+using Common.Log;
+using JetBrains.Annotations;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -17,6 +20,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
         private readonly List<ProducingWorker> _workers = new List<ProducingWorker>();
         private readonly IMessageQueue _requestQueue;
+        private readonly ILog _log;
 
         private bool _isDisposed;
 
@@ -25,9 +29,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="requestQueue">The <see cref="IMessageQueue"/> to use for queueing incoming requests for processing</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ProducerLoadBalancer(IMessageQueue requestQueue)
+        public ProducerLoadBalancer(IMessageQueue requestQueue, [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
+            _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
         /// <summary>
@@ -40,20 +45,22 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));
 
+            _log.WriteInfoAsync(nameof(ProducerLoadBalancer), nameof(AcceptConnection), null, "Accept connection").Wait();
+
             // Find out which worker has the least connections
             var minConnections = MAX_CONNECTIONS_PER_WORKER;
             ProducingWorker leastLoadWorker = null;
 
-            for(int i = 0; i < _workers.Count; i++)
+            for (int i = 0; i < _workers.Count; i++)
             {
                 var worker = _workers[i];
 
-                if(worker.ConnectionCount < minConnections)
+                if (worker.ConnectionCount < minConnections)
                 {
                     leastLoadWorker = worker;
                     minConnections = worker.ConnectionCount;
                 }
-                else if(worker.ConnectionCount == 0) // More than one worker with no connections, shut it down
+                else if (worker.ConnectionCount == 0) // More than one worker with no connections, shut it down
                 {
                     worker.Dispose();
                     _workers.RemoveAt(i);
@@ -61,10 +68,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 }
             }
 
-            if(minConnections == MAX_CONNECTIONS_PER_WORKER)
+            if (minConnections == MAX_CONNECTIONS_PER_WORKER)
             {
                 // All workers are on max load, spin up a new one
-                var newWorker = new ProducingWorker(_requestQueue);
+                var newWorker = new ProducingWorker(_requestQueue, _log);
                 newWorker.AddConnection(connection);
 
                 _workers.Add(newWorker);
@@ -87,7 +94,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         {
             if (_isDisposed) return;
 
-            if(isDisposing)
+            if (isDisposing)
             {
                 foreach (var worker in _workers)
                     worker.Dispose();

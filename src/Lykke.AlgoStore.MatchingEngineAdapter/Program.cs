@@ -37,8 +37,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
                 _startup.Log.WriteMonitorAsync("", $"Env: {EnvInfo}", "Started").Wait();
 
-                IsAliveCheck();
-
                 // Start the listening service
                 var listeningService = _startup.ApplicationContainer.Resolve<IListeningService>();
                 listeningService.Start();
@@ -70,32 +68,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
             //Need to sleep for 5s in order for log to get saved
             Thread.Sleep(5000);
-        }
-
-        private static void IsAliveCheck()
-        {
-            var healthService = _startup.ApplicationContainer.Resolve<IHealthService>();
-            var healthViloationMessage = healthService.GetHealthViolationMessage();
-
-            if (healthViloationMessage != null)
-            {
-                Console.WriteLine($"Service is unhealthy: {healthViloationMessage}");
-            }
-            else
-            {
-                Console.WriteLine(
-                    $"Name = {PlatformServices.Default.Application.ApplicationName}");
-
-                Console.WriteLine(
-                    $"Version = {PlatformServices.Default.Application.ApplicationVersion}");
-
-                Console.WriteLine($"Env = {EnvInfo}");
-#if DEBUG
-                Console.WriteLine("IsDebug = true");
-#else
-                    Console.WriteLine("IsDebug = false");
-#endif
-            }
         }
     }
 }
