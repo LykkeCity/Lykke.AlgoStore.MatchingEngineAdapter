@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Common.Log;
+using JetBrains.Annotations;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -17,6 +19,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private readonly Thread _worker;
         private readonly object _sync = new object();
         private readonly ManualResetEvent _hasConnectionsEvent = new ManualResetEvent(false);
+
+        private readonly ILog _log;
+
 
         private IAsyncResult[] _readArray;
         private WaitHandle[] _waitHandleArray;
@@ -33,9 +38,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="requestQueue">The <see cref="IRequestQueue"/> to use for queueing incoming requests for processing</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ProducingWorker(IRequestQueue requestQueue)
+        public ProducingWorker(IRequestQueue requestQueue, [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
+            _log = log ?? throw new ArgumentNullException(nameof(log));
 
             _worker = new Thread(AcceptMessages);
             _worker.Priority = ThreadPriority.Highest;
@@ -130,8 +136,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     // Wait until we have connections
                     _hasConnectionsEvent.WaitOne();
                 }
-                catch(ThreadInterruptedException)
+                catch(ThreadInterruptedException exception)
                 {
+                    _log.WriteErrorAsync(nameof(ProducingWorker), nameof(AcceptMessages), null, exception).Wait();
                     return;
                 }
 
@@ -239,10 +246,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             }
             catch (System.IO.InvalidDataException e)
             {
+                _log.WriteErrorAsync(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), null, e).Wait();
                 Console.WriteLine($"Client sent invalid data, dropping connection: {e}");
             }
             catch (Exception e) when (e is System.IO.IOException || e is ObjectDisposedException)
             {
+                _log.WriteErrorAsync(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), null, e).Wait();
                 Console.WriteLine($"Connection to client was lost: {e}");
             }
 

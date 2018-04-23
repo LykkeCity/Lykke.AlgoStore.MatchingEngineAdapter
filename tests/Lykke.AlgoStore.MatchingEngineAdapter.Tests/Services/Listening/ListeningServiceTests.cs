@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
+using Common.Log;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 {
@@ -22,8 +23,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             var producerLoadBalancer = Given_Correct_ProducerLoadBalancerMock();
             var requestQueue = Given_Correct_RequestQueue();
             var matchingEngineAdapter = Given_CorrectMatchingEngineAdapterMock();
+            var logMock = Given_Log();
 
-            var listeningService = new ListeningService(producerLoadBalancer.Object, requestQueue, matchingEngineAdapter.Object, 12345);
+            var listeningService = new ListeningService(producerLoadBalancer.Object, requestQueue, matchingEngineAdapter.Object, 12345, logMock);
             listeningService.Start();
 
             var tcpClient = new TcpClient();
@@ -94,6 +96,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
                 });
 
             return matchingEngineAdapterMock;
+        }
+
+        private ILog Given_Log()
+        {
+            var log = new Mock<ILog>();
+            return log.Object;
         }
     }
 }

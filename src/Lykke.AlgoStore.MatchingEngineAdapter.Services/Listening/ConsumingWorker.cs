@@ -1,9 +1,12 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
+﻿using Common.Log;
+using JetBrains.Annotations;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
@@ -17,6 +20,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private readonly IRequestQueue _requestQueue;
         private readonly IMatchingEngineAdapter _matchingEngineAdapter;
+        private readonly ILog _log;
 
         private Thread _thread;
 
@@ -33,8 +37,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Initializes a <see cref="ConsumingWorker"/> using a given <see cref="IRequestQueue"/> to process messages from
         /// </summary>
         /// <param name="requestQueue">A <see cref="IRequestQueue"/></param>
+        /// <param name="matchingEngineAdapter">A <see cref="IMatchingEngineAdapter"/></param>
+        /// <param name="log">A <see cref="ILog"/></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ConsumingWorker(IRequestQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter)
+        public ConsumingWorker(IRequestQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter, [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException();
             _matchingEngineAdapter =
@@ -45,6 +51,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
             _thread = new Thread(DoWork) { Priority = ThreadPriority.Highest };
             _thread.Start(_cts.Token);
+
+            _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
         /// <summary>
@@ -59,7 +67,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         {
             if (_isDisposed) return;
 
-            if(isDisposing)
+            if (isDisposing)
             {
                 _cts.Cancel();
                 _thread.Interrupt();
@@ -73,7 +81,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         {
             var cancellationToken = (CancellationToken)cancellationTokenObj;
 
-            while(!cancellationToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -85,8 +93,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     if (_messageHandlers.ContainsKey(messageType))
                         _messageHandlers[messageType](request);
                 }
-                catch(OperationCanceledException)
+                catch (OperationCanceledException exception)
                 {
+                    _log.WriteErrorAsync(nameof(ConsumingWorker), nameof(DoWork), null, exception).Wait();
                     return;
                 }
             }
@@ -106,7 +115,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
 
         /// <summary>
-        /// Handles a <see cref="MatchingEngineRequest"/> by replying with <see cref="MatchingEngineResponse"/> containing
+        /// Handles a <see cref="MatchingEngineRequest"/> by replying with <see cref="ResponseModel{T}"/> containing
         /// the response message />
         /// </summary>
         /// <param name="request">The <see cref="RequestInfo"/> containing the message</param>

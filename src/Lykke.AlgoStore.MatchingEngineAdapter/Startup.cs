@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
@@ -11,6 +9,8 @@ using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.IO;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter
 {
