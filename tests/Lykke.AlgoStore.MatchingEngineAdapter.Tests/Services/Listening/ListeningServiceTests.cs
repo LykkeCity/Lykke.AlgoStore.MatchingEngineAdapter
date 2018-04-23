@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Common.Log;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 {
@@ -17,8 +18,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         {
             var producerLoadBalancer = Given_Correct_ProducerLoadBalancerMock();
             var requestQueue = Given_Correct_RequestQueue();
+            var logMock = Given_Log();
 
-            var listeningService = new ListeningService(producerLoadBalancer.Object, requestQueue, 12345);
+            var listeningService = new ListeningService(producerLoadBalancer.Object, requestQueue, 12345, logMock);
             listeningService.Start();
 
             var tcpClient = new TcpClient();
@@ -66,6 +68,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
                            .Returns(new PingRequest { Message = "" });
 
             return requestInfoMock.Object;
+        }
+
+        private ILog Given_Log()
+        {
+            var log = new Mock<ILog>();
+            return log.Object;
         }
     }
 }
