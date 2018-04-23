@@ -17,7 +17,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     {
         private static readonly Dictionary<MeaRequestType, Type> _messageTypeMap = new Dictionary<MeaRequestType, Type>
         {
-            [MeaRequestType.Ping] = typeof(PingRequest)
+            [MeaRequestType.Ping] = typeof(PingRequest),
+            [MeaRequestType.MarketOrderRequest] = typeof(MarketOrderRequest)
         };
 
         private readonly Socket _socket;

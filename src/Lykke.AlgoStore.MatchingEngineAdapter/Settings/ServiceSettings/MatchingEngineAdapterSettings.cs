@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using JetBrains.Annotations;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
 {
@@ -7,5 +8,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
     {
         public DbSettings Db { get; set; }
         public ListenerSettings Listener { get; set; }
+        public TimeSpan CacheExpirationPeriod { get; set; }
     }
 }

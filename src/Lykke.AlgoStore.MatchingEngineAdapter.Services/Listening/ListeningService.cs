@@ -15,6 +15,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     public class ListeningService : IListeningService
     {
         private readonly IRequestQueue _requestQueue;
+        private readonly IMatchingEngineAdapter _matchingEngineAdapter;
         private readonly IProducerLoadBalancer _producerLoadBalancer;
         private readonly ConsumerLoadBalancer _consumerLoadBalancer;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
@@ -30,14 +31,15 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <summary>
         /// Initializes a <see cref="ListeningService"/>
         /// </summary>
-        public ListeningService(IProducerLoadBalancer producerLoadBalancer, IRequestQueue requestQueue,
-                                    ushort port, [NotNull] ILog log)
+        public ListeningService(IProducerLoadBalancer producerLoadBalancer, IRequestQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter,
+            ushort port, [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
+            _matchingEngineAdapter = matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
             _log = log ?? throw new ArgumentNullException(nameof(log));
 
             _producerLoadBalancer = producerLoadBalancer ?? throw new ArgumentNullException(nameof(producerLoadBalancer));
-            _consumerLoadBalancer = new ConsumerLoadBalancer(_requestQueue, _log);
+            _consumerLoadBalancer = new ConsumerLoadBalancer(_requestQueue, _matchingEngineAdapter, _log);
 
             _port = port;
         }
@@ -112,7 +114,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     catch (ObjectDisposedException exception)
                     {
                         _log.WriteErrorAsync(nameof(ListeningService), nameof(AcceptConnections), null, exception);
-                        return;
                     }
                     finally
                     {
@@ -122,7 +123,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
                 var asyncResult = _listener.BeginAcceptSocket(callback, null);
 
-                while (!autoResetEvent.WaitOne(500) && !cancellationToken.IsCancellationRequested) ;
+                while (!autoResetEvent.WaitOne(500) && !cancellationToken.IsCancellationRequested);
             }
         }
     }
