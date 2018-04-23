@@ -1,4 +1,5 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
+﻿using Common.Log;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
 using System;
 using System.Net;
@@ -12,6 +13,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         private readonly TcpClient _tcpClient = new TcpClient();
         private readonly IPAddress _ipAddress;
         private readonly ushort _port;
+        private readonly ILog _log;
 
         private readonly Thread _workerThread;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
@@ -20,10 +22,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
         public event Action<IMessageInfo> OnMessageReceived;
 
-        public MeaCommunicator(IPAddress ipAddress, ushort port)
+        public MeaCommunicator(ILog log, IPAddress ipAddress, ushort port)
         {
-            _ipAddress = ipAddress ?? throw new ArgumentNullException();
+            _log = log ?? throw new ArgumentNullException(nameof(log));
+            _ipAddress = ipAddress ?? throw new ArgumentNullException(nameof(ipAddress));
             _port = port;
+
+            _log.WriteInfo(nameof(MeaCommunicator), nameof(MeaCommunicator),
+                           $"Initializing MEA communicator with target address {_ipAddress}:{_port}");
 
             _workerThread = new Thread(AcceptMessages);
             _workerThread.Start(_cts.Token);
@@ -32,6 +38,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         private void EnsureConnected()
         {
             if (_tcpClient.Connected) return;
+
+            _log.WriteInfo(nameof(MeaCommunicator), nameof(EnsureConnected), "Connecting to MEA...");
 
             _tcpClient.Connect(_ipAddress, _port);
             var networkStream = _tcpClient.GetStream();
@@ -52,6 +60,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
                 }
                 catch(Exception e)
                 {
+                    _log.WriteError(nameof(MeaCommunicator), nameof(AcceptMessages), e);
                     Console.WriteLine(e);
                 }
             }
