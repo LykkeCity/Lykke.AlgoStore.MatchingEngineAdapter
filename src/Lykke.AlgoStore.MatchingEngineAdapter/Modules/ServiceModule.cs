@@ -2,6 +2,7 @@
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Settings;
 using Lykke.SettingsReader;
@@ -45,6 +46,18 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
 
             builder.RegisterType<ShutdownManager>()
                 .As<IShutdownManager>();
+
+            builder.RegisterType<ListeningService>()
+                .As<IListeningService>()
+                .WithParameter(TypedParameter.From(_settings.CurrentValue.Listener.Port))
+                .SingleInstance();
+
+            builder.RegisterType<ProducerLoadBalancer>()
+                .As<IProducerLoadBalancer>();
+
+            builder.RegisterType<RequestQueue>()
+                .As<IRequestQueue>()
+                .SingleInstance();
 
             // TODO: Add your dependencies here
 
