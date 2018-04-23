@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.MatchingEngine.Connector.Abstractions.Models;
@@ -19,6 +20,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         private readonly ILog _log;
         private readonly IMatchingEngineClient _matchingEngineClient;
         //private readonly IRepository<LimitOrderState> _orderStateRepository;
+        private readonly IAlgoInstanceTradeRepository _algoInstanceTradeRepository;
         private readonly IFeeCalculatorClient _feeCalculatorClient;
         private readonly IAssetsService _assetsService;
         private readonly string _feeSettingsTargetClientIdHft;
@@ -42,6 +44,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         };
 
         public MatchingEngineAdapter(IMatchingEngineClient matchingEngineClient,
+            IAlgoInstanceTradeRepository algoClientInstanceRepository,
             IFeeCalculatorClient feeCalculatorClient,
             IAssetsService assetsService,
             string feeSettingsTargetClientIdHft,
@@ -49,6 +52,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         {
             _matchingEngineClient =
                 matchingEngineClient ?? throw new ArgumentNullException(nameof(matchingEngineClient));
+            _algoInstanceTradeRepository = algoClientInstanceRepository ?? throw new ArgumentNullException(nameof(algoClientInstanceRepository));
             _feeCalculatorClient = feeCalculatorClient ?? throw new ArgumentNullException(nameof(feeCalculatorClient));
             _assetsService = assetsService ?? throw new ArgumentNullException(nameof(assetsService));
             _feeSettingsTargetClientIdHft = feeSettingsTargetClientIdHft ?? throw new ArgumentNullException(nameof(_feeSettingsTargetClientIdHft));
@@ -64,7 +68,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         }
 
         public async Task<ResponseModel<double>> HandleMarketOrderAsync(string clientId, string assetPairId, OrderAction orderAction, double volume,
-            bool straight, double? reservedLimitVolume = null)
+            bool straight, string instanceId, double? reservedLimitVolume = null)
         {
             var order = new MarketOrderModel
             {
@@ -82,10 +86,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             await CheckResponseAndThrowIfNull(response);
             if (response.Status == MeStatusCodes.Ok)
             {
-                return ResponseModel<double>.CreateOk(response.Price, order.Id);
+                SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, response.Price, instanceId);
+                return ResponseModel<double>.CreateOk(response.Price);             
             }
             return ConvertToApiModel<double>(response.Status);
         }
+
 
         //This method is to be used in the future when implementing Limit orders.
         //public async Task<ResponseModel<Guid>> PlaceLimitOrderAsync(string clientId, string assetPairId, OrderAction orderAction, double volume,
@@ -193,5 +199,19 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         //            : (int)FeeSizeType.PERCENTAGE
         //    };
         //}
+
+        private async Task SaveTradeInDbAsync(string orderId, string walletId, OrderAction orderAction, double volume, double price, string instanceId)
+        {
+            await _algoInstanceTradeRepository.CreateAlgoInstanceOrderAsync(
+                new CSharp.AlgoTemplate.Models.Models.AlgoInstanceTrade
+                {
+                    OrderId = orderId,
+                    WalletId = walletId,
+                    IsBuy = orderAction == OrderAction.Buy ? true : false,
+                    Amount = volume,
+                    Price = price,
+                    InstanceId = instanceId
+                });
+        }
     }
 }

@@ -13,6 +13,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     public class ListeningService : IListeningService
     {
         private readonly IRequestQueue _requestQueue;
+        private readonly IMatchingEngineAdapter _matchingEngineAdapter;
         private readonly IProducerLoadBalancer _producerLoadBalancer;
         private readonly ConsumerLoadBalancer _consumerLoadBalancer;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
@@ -27,12 +28,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <summary>
         /// Initializes a <see cref="ListeningService"/>
         /// </summary>
-        public ListeningService(IProducerLoadBalancer producerLoadBalancer, IRequestQueue requestQueue, ushort port)
+        public ListeningService(IProducerLoadBalancer producerLoadBalancer, IRequestQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter, ushort port)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
+            _matchingEngineAdapter = matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
 
             _producerLoadBalancer = producerLoadBalancer ?? throw new ArgumentNullException(nameof(producerLoadBalancer));
-            _consumerLoadBalancer = new ConsumerLoadBalancer(_requestQueue);
+            _consumerLoadBalancer = new ConsumerLoadBalancer(_requestQueue, _matchingEngineAdapter);
 
             _port = port;
         }

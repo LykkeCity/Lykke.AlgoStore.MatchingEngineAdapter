@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Strings;
+using ProtoBuf;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain
 {
@@ -90,17 +91,17 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain
         }
     }
 
+    [ProtoContract]
     public class ResponseModel<T> : ResponseModel
     {
+        [ProtoMember(1, IsRequired = true)]
         public T Result { get; set; }
-        public string OrderId { get; set; }
 
-        public static ResponseModel<T> CreateOk(T result, string orderId )
+        public static ResponseModel<T> CreateOk(T result)
         {
             return new ResponseModel<T>
             {
-                Result = result,
-                OrderId = orderId
+                Result = result
             };
         }
 

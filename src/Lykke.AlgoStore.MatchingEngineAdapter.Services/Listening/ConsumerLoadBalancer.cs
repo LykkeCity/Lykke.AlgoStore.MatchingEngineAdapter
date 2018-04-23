@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -15,6 +16,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private readonly List<ConsumingWorker> _workers = new List<ConsumingWorker>();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private readonly IRequestQueue _requestQueue;
+        private readonly IMatchingEngineAdapter _matchingEngineAdapter;
 
         private Thread _balancingThread;
         private int _loadCounter;
@@ -25,11 +27,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="requestQueue">A <see cref="IRequestQueue"/></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ConsumerLoadBalancer(IRequestQueue requestQueue)
+        public ConsumerLoadBalancer(IRequestQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
+            _matchingEngineAdapter = matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
 
-            _workers.Add(new ConsumingWorker(_requestQueue));
+            _workers.Add(new ConsumingWorker(_requestQueue, _matchingEngineAdapter));
             _balancingThread = new Thread(DoBalancing);
             _balancingThread.Start(_cts.Token);
         }
@@ -65,7 +68,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
                 if (_loadCounter >= 4) // If the load is high for 2 seconds straight, spin up a new consumer
                 {
-                    _workers.Add(new ConsumingWorker(_requestQueue));
+                    _workers.Add(new ConsumingWorker(_requestQueue, _matchingEngineAdapter));
                     _loadCounter = 0;
                 }
                 else if(_loadCounter <= -20 && _workers.Count > 1) // If the load has been low for 10 seconds, switch off a consumer

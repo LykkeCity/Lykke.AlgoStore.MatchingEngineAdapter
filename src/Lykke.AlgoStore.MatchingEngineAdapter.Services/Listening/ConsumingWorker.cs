@@ -4,6 +4,7 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -15,6 +16,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private readonly Dictionary<Type, Action<IRequestInfo>> _messageHandlers = new Dictionary<Type, Action<IRequestInfo>>();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private readonly IRequestQueue _requestQueue;
+        private readonly IMatchingEngineAdapter _matchingEngineAdapter;
 
         private Thread _thread;
 
@@ -32,11 +34,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="requestQueue">A <see cref="IRequestQueue"/></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ConsumingWorker(IRequestQueue requestQueue)
+        public ConsumingWorker(IRequestQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException();
+            _matchingEngineAdapter =
+                matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
 
             _messageHandlers.Add(typeof(PingRequest), PingHandler);
+            _messageHandlers.Add(typeof(MatchingEngineRequest), MatchingEngineRequestHandler);
 
             _thread = new Thread(DoWork) { Priority = ThreadPriority.Highest };
             _thread.Start(_cts.Token);
@@ -88,7 +93,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         }
 
         /// <summary>
-        /// Handles a <see cref="PingMessage"/> by replying with <see cref="Responses.MeaResponseType.Pong"/> containing
+        /// Handles a <see cref="PingMessage"/> by replying with <see cref="MeaResponseType.Pong"/> containing
         /// the same message
         /// </summary>
         /// <param name="request">The <see cref="RequestInfo"/> containing the message</param>
@@ -97,6 +102,22 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             var msg = (PingRequest)request.Message;
 
             request.Reply(MeaResponseType.Pong, msg);
+        }
+
+
+        /// <summary>
+        /// Handles a <see cref="MatchingEngineRequest"/> by replying with <see cref="MatchingEngineResponse"/> containing
+        /// the response message />
+        /// </summary>
+        /// <param name="request">The <see cref="RequestInfo"/> containing the message</param>
+        private void MatchingEngineRequestHandler(IRequestInfo request)
+        {
+            var msg = (MatchingEngineRequest) request.Message;
+
+            var result = _matchingEngineAdapter.HandleMarketOrderAsync(msg.ClientId, msg.AssetPairId, msg.OrderAction,
+                msg.Volume, msg.IsStraight, msg.InstanceId);
+
+            request.Reply(MeaResponseType.MatchingEngineResponse, result.Result);
         }
     }
 }

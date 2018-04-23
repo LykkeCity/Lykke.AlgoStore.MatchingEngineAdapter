@@ -1,9 +1,11 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services;
+using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Settings;
 using Lykke.SettingsReader;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,7 +51,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
 
             builder.RegisterType<ListeningService>()
                 .As<IListeningService>()
-                .WithParameter(TypedParameter.From(_settings.CurrentValue.Listener.Port))
+                .WithParameter(TypedParameter.From(_settings.CurrentValue.AlgoStoreMatchingEngineAdapter.Listener.Port))
                 .SingleInstance();
 
             builder.RegisterType<ProducerLoadBalancer>()
@@ -57,6 +59,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
 
             builder.RegisterType<RequestQueue>()
                 .As<IRequestQueue>()
+                .SingleInstance();
+
+            builder.RegisterType<AlgoInstanceTradeRepository>()
+                .As<IAlgoInstanceTradeRepository>()
                 .SingleInstance();
 
             // TODO: Add your dependencies here

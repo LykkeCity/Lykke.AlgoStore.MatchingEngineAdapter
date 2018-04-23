@@ -2,6 +2,7 @@
 {
     public enum MeaResponseType
     {
-        Pong = 0
+        Pong = 0,
+        MatchingEngineResponse = 1
     }
 }

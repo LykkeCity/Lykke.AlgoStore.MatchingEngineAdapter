@@ -8,6 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 {
@@ -18,9 +21,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         public void ConsumingWorker_SubmitsCorrectResponse_ForPingMessage()
         {
             var requestQueueMock = Given_CorrectRequestQueueMock();
+            var matchingEngineAdapterMock = Given_CorrectMatchingEngineAdapterMock();
 
-            var consumingWorker = new ConsumingWorker(requestQueueMock.Object);
-
+            var consumingWorker = new ConsumingWorker(requestQueueMock.Object, matchingEngineAdapterMock.Object);
+            
             Thread.Sleep(1000);
 
             consumingWorker.Dispose();
@@ -54,14 +58,37 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             var pingRequest = new PingRequest { Message = "test" };
 
             requestInfoMock.SetupGet(r => r.Id)
-                           .Returns(1);
+                .Returns(1);
 
             requestInfoMock.SetupGet(r => r.Message)
-                           .Returns(pingRequest);
+                .Returns(pingRequest);
 
             requestInfoMock.Setup(r => r.Reply(MeaResponseType.Pong, pingRequest));
 
             return requestInfoMock.Object;
+        }
+
+        private Mock<IMatchingEngineAdapter> Given_CorrectMatchingEngineAdapterMock()
+        {
+            var matchingEngineAdapterMock = new Mock<IMatchingEngineAdapter>(MockBehavior.Strict);
+            var firstTime = true;
+            var result = new ResponseModel<double>();
+
+            matchingEngineAdapterMock.Setup(r => r.HandleMarketOrderAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<OrderAction>(), It.IsAny<double>(),
+                    It.IsAny<bool>(), It.IsAny<string>(), null))
+                .Returns(Task.FromResult(result))
+                .Callback(() =>
+                {
+                    if (firstTime)
+                    {
+                        firstTime = false;
+                        return;
+                    }
+
+                    throw new OperationCanceledException();
+                });
+
+            return matchingEngineAdapterMock;
         }
     }
 }
