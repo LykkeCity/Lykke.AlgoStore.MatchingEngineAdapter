@@ -47,7 +47,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
 
             _messageHandlers.Add(typeof(PingRequest), PingHandler);
-            _messageHandlers.Add(typeof(MatchingEngineRequest), MatchingEngineRequestHandler);
+            _messageHandlers.Add(typeof(MarketOrderRequest), MarketOrderRequestHandler);
 
             _thread = new Thread(DoWork) { Priority = ThreadPriority.Highest };
             _thread.Start(_cts.Token);
@@ -115,18 +115,18 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
 
         /// <summary>
-        /// Handles a <see cref="MatchingEngineRequest"/> by replying with <see cref="ResponseModel{T}"/> containing
+        /// Handles a <see cref="MarketOrderRequest"/> by replying with <see cref="ResponseModel{T}"/> containing
         /// the response message />
         /// </summary>
         /// <param name="request">The <see cref="RequestInfo"/> containing the message</param>
-        private void MatchingEngineRequestHandler(IRequestInfo request)
+        private void MarketOrderRequestHandler(IRequestInfo request)
         {
-            var msg = (MatchingEngineRequest) request.Message;
+            var msg = (MarketOrderRequest) request.Message;
 
             var result = _matchingEngineAdapter.HandleMarketOrderAsync(msg.ClientId, msg.AssetPairId, msg.OrderAction,
                 msg.Volume, msg.IsStraight, msg.InstanceId);
 
-            request.Reply(MeaResponseType.MatchingEngineResponse, result.Result);
+            request.Reply(MeaResponseType.MarketOrderResponse, result.Result);
         }
     }
 }

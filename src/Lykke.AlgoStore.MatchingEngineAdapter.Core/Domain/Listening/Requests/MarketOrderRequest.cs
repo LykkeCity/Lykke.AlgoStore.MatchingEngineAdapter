@@ -3,7 +3,7 @@
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests
 {
     [ProtoContract]
-    public class MatchingEngineRequest
+    public class MarketOrderRequest
     {
         [ProtoMember(1, IsRequired = true)]
         public string ClientId { get; set; }
