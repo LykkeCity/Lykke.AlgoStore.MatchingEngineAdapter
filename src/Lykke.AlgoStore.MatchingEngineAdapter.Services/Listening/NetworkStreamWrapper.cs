@@ -1,5 +1,4 @@
 ﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using ProtoBuf;
 using System;
@@ -13,34 +12,39 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     /// <summary>
     /// Wraps a <see cref="Socket"/> and provides functionality to read and send messages
     /// </summary>
-    internal class ClientSocketWrapper : IClientSocketWrapper
+    public class NetworkStreamWrapper : INetworkStreamWrapper
     {
-        private static readonly Dictionary<MeaRequestType, Type> _messageTypeMap = new Dictionary<MeaRequestType, Type>
+        private static readonly Dictionary<MeaRequestType, Type> _defaultMessageTypeMap = new Dictionary<MeaRequestType, Type>
         {
             [MeaRequestType.Ping] = typeof(PingRequest)
         };
 
-        private readonly Socket _socket;
         private readonly NetworkStream _networkStream;
+        private readonly Dictionary<MeaRequestType, Type> _messageTypeMap;
+
+        private readonly object _sync = new object();
 
         private bool _isDisposed;
 
         /// <summary>
-        /// Initializes a <see cref="ClientSocketWrapper"/> using a given <see cref="Socket"/>
+        /// Initializes a <see cref="NetworkStreamWrapper"/> using a given <see cref="NetworkStream"/>
         /// </summary>
-        /// <param name="socket">The <see cref="Socket"/> to wrap</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="socket"/> is null</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="socket"/> is not connected</exception>
-        public ClientSocketWrapper(Socket socket)
+        /// <param name="networkStream">The <see cref="NetworkStream"/> to wrap</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="networkStream"/> is null</exception>
+        public NetworkStreamWrapper(NetworkStream networkStream) : this(networkStream, _defaultMessageTypeMap)
         {
-            if (socket == null)
-                throw new ArgumentNullException(nameof(socket));
+        }
 
-            if (!socket.Connected)
-                throw new ArgumentException($"{nameof(socket)} must be a connected socket");
-
-            _socket = socket;
-            _networkStream = new NetworkStream(_socket, true);
+        /// <summary>
+        /// Initializes a <see cref="NetworkStreamWrapper"/> using a given <see cref="NetworkStream"/> and type map
+        /// </summary>
+        /// <param name="networkStream">The <see cref="NetworkStream"/> to wrap</param>
+        /// <param name="messageTypeMap">The type map to use when deserializing messages</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="networkStream"/> is null</exception>
+        public NetworkStreamWrapper(NetworkStream networkStream, Dictionary<MeaRequestType, Type> messageTypeMap)
+        {
+            _networkStream = networkStream ?? throw new ArgumentNullException(nameof(networkStream));
+            _messageTypeMap = messageTypeMap ?? _defaultMessageTypeMap;
         }
 
         /// <summary>
@@ -49,7 +53,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <param name="callback">The callback to signal once the read is complete</param>
         /// <param name="state">User-defined state</param>
         /// <returns>A <see cref="IAsyncResult"/> containing information about the async operation</returns>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="ClientSocketWrapper"/> is disposed</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="NetworkStreamWrapper"/> is disposed</exception>
         public IAsyncResult BeginReadMessage(AsyncCallback callback, object state)
         {
             CheckDisposed();
@@ -70,10 +74,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <param name="asyncResult">
         /// The <see cref="IAsyncResult"/> returned by the corresponding <see cref="BeginReadMessage(AsyncCallback, object)"/>
         /// </param>
-        /// <returns>A <see cref="RequestInfo"/> containing information about the request and the message</returns>
+        /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
         /// <exception cref="ArgumentException">Thrown when an invalid <paramref name="asyncResult"/> is given</exception>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="ClientSocketWrapper"/> is disposed</exception>
-        public IRequestInfo EndReadMessage(IAsyncResult asyncResult)
+        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="NetworkStreamWrapper"/> is disposed</exception>
+        public IMessageInfo EndReadMessage(IAsyncResult asyncResult)
         {
             CheckDisposed();
 
@@ -92,9 +96,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Synchronous version of the <see cref="BeginReadMessage(AsyncCallback, object)"/>
         /// and <see cref="EndReadMessage(IAsyncResult)"/> methods. This method will block until a message is available.
         /// </summary>
-        /// <returns>A <see cref="RequestInfo"/> containing information about the request and the message</returns>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="ClientSocketWrapper"/> is disposed</exception>
-        public IRequestInfo ReadMessage()
+        /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
+        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="NetworkStreamWrapper"/> is disposed</exception>
+        public IMessageInfo ReadMessage()
         {
             CheckDisposed();
 
@@ -108,11 +112,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Sends a message
         /// </summary>
         /// <typeparam name="T">The type of the message</typeparam>
-        /// <param name="requestId">The ID of the request this message is a reply to</param>
-        /// <param name="responseType">The response type</param>
+        /// <param name="messageId">The ID of the request this message is a reply to</param>
+        /// <param name="messageType">The message type</param>
         /// <param name="message">The message to send</param>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="ClientSocketWrapper"/> is disposed</exception>
-        public void WriteMessage<T>(uint requestId, MeaResponseType responseType, T message)
+        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="NetworkStreamWrapper"/> is disposed</exception>
+        public void WriteMessage<T>(uint messageId, byte messageType, T message)
         {
             CheckDisposed();
 
@@ -122,12 +126,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
                 var bytes = ms.ToArray();
 
-                using (var bw = new BinaryWriter(_networkStream, Encoding.UTF8, true))
+                lock (_sync)
                 {
-                    bw.Write((byte)responseType);
-                    bw.Write(requestId);
-                    bw.Write((ushort)bytes.Length);
-                    bw.Write(bytes);
+                    using (var bw = new BinaryWriter(_networkStream, Encoding.UTF8, true))
+                    {
+                        bw.Write(messageType);
+                        bw.Write(messageId);
+                        bw.Write((ushort)bytes.Length);
+                        bw.Write(bytes);
+                        bw.Flush();
+                    }
                 }
             }
         }
@@ -146,9 +154,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
             if(isDisposing)
             {
+                _networkStream.Close();
                 _networkStream.Dispose();
-                _socket.Close();
-                _socket.Dispose();
             }
 
             _isDisposed = true;
@@ -158,25 +165,28 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Reads a message given a certain message type
         /// </summary>
         /// <param name="messageType">The type of the message to read</param>
-        /// <returns>A <see cref="RequestInfo"/> containing information about the request and the message</returns>
+        /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
         /// <exception cref="InvalidDataException">Thrown when the message type is invalid</exception>
-        private RequestInfo ParseMessage(byte messageType)
+        private MessageInfo ParseMessage(byte messageType)
         {
-            if (!Enum.IsDefined(typeof(MeaRequestType), (int)messageType))
-                throw new InvalidDataException($"Message type {messageType} is not defined");
+            if (!_messageTypeMap.ContainsKey((MeaRequestType)messageType))
+                throw new InvalidDataException($"Message type {messageType} has no handler");
 
-            var result = new RequestInfo(this);
+            var result = new MessageInfo(this);
 
             using (var br = new BinaryReader(_networkStream, Encoding.UTF8, true))
             {
-                result.Id = br.ReadUInt32();
-                var dataLength = br.ReadUInt16();
-
-                var type = _messageTypeMap[(MeaRequestType)messageType];
-
-                using (var ms = new MemoryStream(br.ReadBytes(dataLength)))
+                lock (_sync)
                 {
-                    result.Message = Serializer.NonGeneric.Deserialize(type, ms);
+                    result.Id = br.ReadUInt32();
+                    var dataLength = br.ReadUInt16();
+
+                    var type = _messageTypeMap[(MeaRequestType)messageType];
+
+                    using (var ms = new MemoryStream(br.ReadBytes(dataLength)))
+                    {
+                        result.Message = Serializer.NonGeneric.Deserialize(type, ms);
+                    }
                 }
             }
 

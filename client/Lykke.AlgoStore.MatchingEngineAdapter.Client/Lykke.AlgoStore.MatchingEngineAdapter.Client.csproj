@@ -34,6 +34,12 @@
 
   <ItemGroup>
     <PackageReference Include="Lykke.Common" Version="6.1.1" />
+    <PackageReference Include="protobuf-net" Version="2.3.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Lykke.AlgoStore.MatchingEngineAdapter.Core\Lykke.AlgoStore.MatchingEngineAdapter.Core.csproj" />
+    <ProjectReference Include="..\..\src\Lykke.AlgoStore.MatchingEngineAdapter.Services\Lykke.AlgoStore.MatchingEngineAdapter.Services.csproj" />
   </ItemGroup>
 
 </Project>

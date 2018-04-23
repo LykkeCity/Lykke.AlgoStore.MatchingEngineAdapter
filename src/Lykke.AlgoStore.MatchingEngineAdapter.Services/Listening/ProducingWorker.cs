@@ -7,13 +7,13 @@ using System.Threading;
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
     /// <summary>
-    /// Listens for incoming requests on a set of <see cref="IClientSocketWrapper"/> and
+    /// Listens for incoming requests on a set of <see cref="INetworkStreamWrapper"/> and
     /// handles events like network failures and invalid requests
     /// </summary>
     internal class ProducingWorker : IDisposable
     {
-        private readonly List<IClientSocketWrapper> _sockets = new List<IClientSocketWrapper>();
-        private readonly IRequestQueue _requestQueue;
+        private readonly List<INetworkStreamWrapper> _sockets = new List<INetworkStreamWrapper>();
+        private readonly IMessageQueue _requestQueue;
         private readonly Thread _worker;
         private readonly object _sync = new object();
         private readonly ManualResetEvent _hasConnectionsEvent = new ManualResetEvent(false);
@@ -31,9 +31,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <summary>
         /// Initializes a new instance of <see cref="ProducingWorker"/>
         /// </summary>
-        /// <param name="requestQueue">The <see cref="IRequestQueue"/> to use for queueing incoming requests for processing</param>
+        /// <param name="requestQueue">The <see cref="IMessageQueue"/> to use for queueing incoming requests for processing</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ProducingWorker(IRequestQueue requestQueue)
+        public ProducingWorker(IMessageQueue requestQueue)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
 
@@ -45,10 +45,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <summary>
         /// Adds a new connection to handle
         /// </summary>
-        /// <param name="connection">The <see cref="IClientSocketWrapper"/> to handle</param>
+        /// <param name="connection">The <see cref="INetworkStreamWrapper"/> to handle</param>
         /// <exception cref="ObjectDisposedException">Thrown when the <see cref="ProducingWorker"/> has been disposed</exception>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> is null</exception>
-        public void AddConnection(IClientSocketWrapper connection)
+        public void AddConnection(INetworkStreamWrapper connection)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException("The worker has been disposed");
@@ -161,7 +161,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     }
 
                     // Finish reading the message
-                    if (!RunAndCatchDisconnection(() => _sockets[index].EndReadMessage(result), out IRequestInfo request, _sockets[index]))
+                    if (!RunAndCatchDisconnection(() => _sockets[index].EndReadMessage(result), out IMessageInfo request, _sockets[index]))
                         continue;
 
                     // Queue the message for processing
@@ -186,10 +186,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         }
 
         /// <summary>
-        /// Handles the process of disconnecting and disposing a <see cref="IClientSocketWrapper"/>
+        /// Handles the process of disconnecting and disposing a <see cref="INetworkStreamWrapper"/>
         /// </summary>
-        /// <param name="clientSocket">The <see cref="IClientSocketWrapper"/> to dispose</param>
-        private void HandleDisconnect(IClientSocketWrapper clientSocket)
+        /// <param name="clientSocket">The <see cref="INetworkStreamWrapper"/> to dispose</param>
+        private void HandleDisconnect(INetworkStreamWrapper clientSocket)
         {
             lock(_sync)
             {
@@ -228,9 +228,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <typeparam name="T">The type the delegate will return</typeparam>
         /// <param name="codeToRun">The delegate to run and check for failures</param>
         /// <param name="result">The result to set to the return value of the delegate</param>
-        /// <param name="connection">The <see cref="IClientSocketWrapper"/> to dispose in the case of failures</param>
+        /// <param name="connection">The <see cref="INetworkStreamWrapper"/> to dispose in the case of failures</param>
         /// <returns>true if the delegate ran successfully, false if there was a failure</returns>
-        private bool RunAndCatchDisconnection<T>(Func<T> codeToRun, out T result, IClientSocketWrapper connection)
+        private bool RunAndCatchDisconnection<T>(Func<T> codeToRun, out T result, INetworkStreamWrapper connection)
         {
             try
             {

@@ -16,9 +16,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         public void ListeningService_AcceptsConnection_Successfully()
         {
             var producerLoadBalancer = Given_Correct_ProducerLoadBalancerMock();
-            var requestQueue = Given_Correct_RequestQueue();
+            var messageQueue = Given_Correct_MessageQueue();
 
-            var listeningService = new ListeningService(producerLoadBalancer.Object, requestQueue, 12345);
+            var listeningService = new ListeningService(producerLoadBalancer.Object, messageQueue, 12345);
             listeningService.Start();
 
             var tcpClient = new TcpClient();
@@ -35,7 +35,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         {
             var producerLoadBalancer = new Mock<IProducerLoadBalancer>(MockBehavior.Strict);
 
-            producerLoadBalancer.Setup(p => p.AcceptConnection(It.IsAny<IClientSocketWrapper>()))
+            producerLoadBalancer.Setup(p => p.AcceptConnection(It.IsAny<INetworkStreamWrapper>()))
                                 .Verifiable();
 
             producerLoadBalancer.Setup(p => p.Dispose())
@@ -44,28 +44,28 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             return producerLoadBalancer;
         }
 
-        private IRequestQueue Given_Correct_RequestQueue()
+        private IMessageQueue Given_Correct_MessageQueue()
         {
-            var requestQueueMock = new Mock<IRequestQueue>();
-            var requestInfo = Given_Correct_RequestInfo();
+            var messageQueueMock = new Mock<IMessageQueue>();
+            var messageInfo = Given_Correct_MessageInfo();
 
-            requestQueueMock.Setup(rq => rq.Dequeue(It.IsAny<CancellationToken>()))
-                            .Returns(requestInfo);
+            messageQueueMock.Setup(rq => rq.Dequeue(It.IsAny<CancellationToken>()))
+                            .Returns(messageInfo);
 
-            return requestQueueMock.Object;
+            return messageQueueMock.Object;
         }
 
-        private IRequestInfo Given_Correct_RequestInfo()
+        private IMessageInfo Given_Correct_MessageInfo()
         {
-            var requestInfoMock = new Mock<IRequestInfo>();
+            var messageInfoMock = new Mock<IMessageInfo>();
 
-            requestInfoMock.SetupGet(ri => ri.Id)
+            messageInfoMock.SetupGet(ri => ri.Id)
                            .Returns(1);
 
-            requestInfoMock.SetupGet(ri => ri.Message)
+            messageInfoMock.SetupGet(ri => ri.Message)
                            .Returns(new PingRequest { Message = "" });
 
-            return requestInfoMock.Object;
+            return messageInfoMock.Object;
         }
     }
 }

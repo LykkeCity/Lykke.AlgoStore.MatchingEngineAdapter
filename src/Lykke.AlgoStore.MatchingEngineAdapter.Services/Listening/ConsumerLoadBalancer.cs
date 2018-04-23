@@ -14,18 +14,18 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     {
         private readonly List<ConsumingWorker> _workers = new List<ConsumingWorker>();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private readonly IRequestQueue _requestQueue;
+        private readonly IMessageQueue _requestQueue;
 
         private Thread _balancingThread;
         private int _loadCounter;
         private bool _isDisposed;
 
         /// <summary>
-        /// Initializes a <see cref="ConsumerLoadBalancer"/> with a given <see cref="IRequestQueue"/> to process messages from
+        /// Initializes a <see cref="ConsumerLoadBalancer"/> with a given <see cref="IMessageQueue"/> to process messages from
         /// </summary>
-        /// <param name="requestQueue">A <see cref="IRequestQueue"/></param>
+        /// <param name="requestQueue">A <see cref="IMessageQueue"/></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ConsumerLoadBalancer(IRequestQueue requestQueue)
+        public ConsumerLoadBalancer(IMessageQueue requestQueue)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
 

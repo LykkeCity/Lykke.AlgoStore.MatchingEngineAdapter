@@ -8,16 +8,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     /// <summary>
     /// Represents a request queue
     /// </summary>
-    public class RequestQueue : IRequestQueue
+    public class MessageQueue : IMessageQueue
     {
-        private readonly BlockingCollection<IRequestInfo> _queue = new BlockingCollection<IRequestInfo>();
+        private readonly BlockingCollection<IMessageInfo> _queue = new BlockingCollection<IMessageInfo>();
 
         /// <summary>
         /// Queues an incoming message for processing
         /// </summary>
-        /// <param name="message">The <see cref="IRequestInfo"/> to enqueue</param>
+        /// <param name="message">The <see cref="IMessageInfo"/> to enqueue</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="message"/> is null</exception>
-        public void Enqueue(IRequestInfo message)
+        public void Enqueue(IMessageInfo message)
         {
             if (message == null)
                 throw new ArgumentNullException(nameof(message));
@@ -29,8 +29,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Takes a message from the queue. If there are no available messages, this method will block until one is available
         /// </summary>
         /// <param name="cancellationToken">A cancellation token to abort the operation</param>
-        /// <returns>The first <see cref="IRequestInfo"/> in the queue</returns>
-        public IRequestInfo Dequeue(CancellationToken cancellationToken)
+        /// <returns>The first <see cref="IMessageInfo"/> in the queue</returns>
+        public IMessageInfo Dequeue(CancellationToken cancellationToken)
         {
             return _queue.Take(cancellationToken);
         }

@@ -12,9 +12,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     /// </summary>
     public class ConsumingWorker : IDisposable
     {
-        private readonly Dictionary<Type, Action<IRequestInfo>> _messageHandlers = new Dictionary<Type, Action<IRequestInfo>>();
+        private readonly Dictionary<Type, Action<IMessageInfo>> _messageHandlers = new Dictionary<Type, Action<IMessageInfo>>();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private readonly IRequestQueue _requestQueue;
+        private readonly IMessageQueue _requestQueue;
 
         private Thread _thread;
 
@@ -28,11 +28,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         public long LastMessageTime => Interlocked.CompareExchange(ref _lastMessageTime, 0, 0);
 
         /// <summary>
-        /// Initializes a <see cref="ConsumingWorker"/> using a given <see cref="IRequestQueue"/> to process messages from
+        /// Initializes a <see cref="ConsumingWorker"/> using a given <see cref="IMessageQueue"/> to process messages from
         /// </summary>
-        /// <param name="requestQueue">A <see cref="IRequestQueue"/></param>
+        /// <param name="requestQueue">A <see cref="IMessageQueue"/></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ConsumingWorker(IRequestQueue requestQueue)
+        public ConsumingWorker(IMessageQueue requestQueue)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException();
 
@@ -91,8 +91,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Handles a <see cref="PingMessage"/> by replying with <see cref="Responses.MeaResponseType.Pong"/> containing
         /// the same message
         /// </summary>
-        /// <param name="request">The <see cref="RequestInfo"/> containing the message</param>
-        private void PingHandler(IRequestInfo request)
+        /// <param name="request">The <see cref="MessageInfo"/> containing the message</param>
+        private void PingHandler(IMessageInfo request)
         {
             var msg = (PingRequest)request.Message;
 

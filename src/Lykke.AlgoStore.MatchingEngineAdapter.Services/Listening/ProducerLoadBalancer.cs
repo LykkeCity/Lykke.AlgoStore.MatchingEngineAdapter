@@ -16,16 +16,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private const int MAX_CONNECTIONS_PER_WORKER = 100;
 
         private readonly List<ProducingWorker> _workers = new List<ProducingWorker>();
-        private readonly IRequestQueue _requestQueue;
+        private readonly IMessageQueue _requestQueue;
 
         private bool _isDisposed;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ProducerLoadBalancer"/>
         /// </summary>
-        /// <param name="requestQueue">The <see cref="IRequestQueue"/> to use for queueing incoming requests for processing</param>
+        /// <param name="requestQueue">The <see cref="IMessageQueue"/> to use for queueing incoming requests for processing</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ProducerLoadBalancer(IRequestQueue requestQueue)
+        public ProducerLoadBalancer(IMessageQueue requestQueue)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
         }
@@ -35,7 +35,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="connection">The connection to accept</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> is null</exception>
-        public void AcceptConnection(IClientSocketWrapper connection)
+        public void AcceptConnection(INetworkStreamWrapper connection)
         {
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));

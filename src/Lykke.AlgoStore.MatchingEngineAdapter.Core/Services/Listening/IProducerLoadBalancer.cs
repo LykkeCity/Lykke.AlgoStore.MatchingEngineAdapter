@@ -6,6 +6,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening
 {
     public interface IProducerLoadBalancer : IDisposable
     {
-        void AcceptConnection(IClientSocketWrapper connection);
+        void AcceptConnection(INetworkStreamWrapper connection);
     }
 }

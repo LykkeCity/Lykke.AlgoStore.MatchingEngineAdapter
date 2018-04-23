@@ -12,7 +12,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     /// </summary>
     public class ListeningService : IListeningService
     {
-        private readonly IRequestQueue _requestQueue;
+        private readonly IMessageQueue _requestQueue;
         private readonly IProducerLoadBalancer _producerLoadBalancer;
         private readonly ConsumerLoadBalancer _consumerLoadBalancer;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
@@ -27,7 +27,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <summary>
         /// Initializes a <see cref="ListeningService"/>
         /// </summary>
-        public ListeningService(IProducerLoadBalancer producerLoadBalancer, IRequestQueue requestQueue, ushort port)
+        public ListeningService(IProducerLoadBalancer producerLoadBalancer, IMessageQueue requestQueue, ushort port)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
 
@@ -102,7 +102,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     try
                     {
                         var socket = _listener.EndAcceptSocket(result);
-                        _producerLoadBalancer.AcceptConnection(new ClientSocketWrapper(socket));
+                        var networkStream = new NetworkStream(socket, ownsSocket: true);
+                        _producerLoadBalancer.AcceptConnection(new NetworkStreamWrapper(networkStream));
                     }
                     catch(ObjectDisposedException)
                     {
