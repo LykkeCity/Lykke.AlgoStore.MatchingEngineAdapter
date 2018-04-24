@@ -1,7 +1,6 @@
 ﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
-using Common;
 using Common.Log;
 using JetBrains.Annotations;
 

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Services
