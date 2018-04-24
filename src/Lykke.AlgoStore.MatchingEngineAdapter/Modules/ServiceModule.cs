@@ -6,6 +6,7 @@ using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Entities;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
+using Lykke.AlgoStore.MatchingEngineAdapter.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Settings;
 using Lykke.SettingsReader;
@@ -32,6 +33,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
             builder.RegisterInstance(_log)
                     .As<ILog>()
                     .SingleInstance();
+
+            builder.RegisterType<HealthService>()
+                .As<IHealthService>()
+                .SingleInstance();
+
+            builder.RegisterType<StartupManager>()
+                .As<IStartupManager>();
+
+            builder.RegisterType<ShutdownManager>()
+                .As<IShutdownManager>();
 
             builder.RegisterType<ListeningService>()
                 .As<IListeningService>()

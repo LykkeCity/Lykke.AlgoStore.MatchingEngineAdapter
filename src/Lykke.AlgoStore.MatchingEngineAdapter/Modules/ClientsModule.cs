@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
