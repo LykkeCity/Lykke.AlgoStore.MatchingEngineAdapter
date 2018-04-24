@@ -16,9 +16,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     /// </summary>
     public class ConsumingWorker : IDisposable
     {
-        private readonly Dictionary<Type, Action<IRequestInfo>> _messageHandlers = new Dictionary<Type, Action<IRequestInfo>>();
+        private readonly Dictionary<Type, Action<IMessageInfo>> _messageHandlers = new Dictionary<Type, Action<IMessageInfo>>();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private readonly IRequestQueue _requestQueue;
+        private readonly IMessageQueue _requestQueue;
         private readonly IMatchingEngineAdapter _matchingEngineAdapter;
         private readonly ILog _log;
 
@@ -34,13 +34,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         public long LastMessageTime => Interlocked.CompareExchange(ref _lastMessageTime, 0, 0);
 
         /// <summary>
-        /// Initializes a <see cref="ConsumingWorker"/> using a given <see cref="IRequestQueue"/> to process messages from
+        /// Initializes a <see cref="ConsumingWorker"/> using a given <see cref="IMessageQueue"/> to process messages from
         /// </summary>
-        /// <param name="requestQueue">A <see cref="IRequestQueue"/></param>
+        /// <param name="requestQueue">A <see cref="IMessageQueue"/></param>
         /// <param name="matchingEngineAdapter">A <see cref="IMatchingEngineAdapter"/></param>
         /// <param name="log">A <see cref="ILog"/></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ConsumingWorker(IRequestQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter, [NotNull] ILog log)
+        public ConsumingWorker(IMessageQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter, [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException();
             _matchingEngineAdapter =
@@ -105,8 +105,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Handles a <see cref="PingMessage"/> by replying with <see cref="MeaResponseType.Pong"/> containing
         /// the same message
         /// </summary>
-        /// <param name="request">The <see cref="RequestInfo"/> containing the message</param>
-        private void PingHandler(IRequestInfo request)
+        /// <param name="request">The <see cref="MessageInfo"/> containing the message</param>
+        private void PingHandler(IMessageInfo request)
         {
             var msg = (PingRequest)request.Message;
 
@@ -119,7 +119,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// the response message />
         /// </summary>
         /// <param name="request">The <see cref="RequestInfo"/> containing the message</param>
-        private void MarketOrderRequestHandler(IRequestInfo request)
+        private void MarketOrderRequestHandler(IMessageInfo request)
         {
             var msg = (MarketOrderRequest) request.Message;
 

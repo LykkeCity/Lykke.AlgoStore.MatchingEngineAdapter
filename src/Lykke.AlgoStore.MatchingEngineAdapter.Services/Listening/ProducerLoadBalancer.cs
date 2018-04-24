@@ -19,7 +19,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private const int MAX_CONNECTIONS_PER_WORKER = 100;
 
         private readonly List<ProducingWorker> _workers = new List<ProducingWorker>();
-        private readonly IRequestQueue _requestQueue;
+        private readonly IMessageQueue _requestQueue;
         private readonly ILog _log;
 
         private bool _isDisposed;
@@ -27,9 +27,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <summary>
         /// Initializes a new instance of <see cref="ProducerLoadBalancer"/>
         /// </summary>
-        /// <param name="requestQueue">The <see cref="IRequestQueue"/> to use for queueing incoming requests for processing</param>
+        /// <param name="requestQueue">The <see cref="IMessageQueue"/> to use for queueing incoming requests for processing</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ProducerLoadBalancer(IRequestQueue requestQueue, [NotNull] ILog log)
+        public ProducerLoadBalancer(IMessageQueue requestQueue, [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
             _log = log ?? throw new ArgumentNullException(nameof(log));
@@ -40,7 +40,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="connection">The connection to accept</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> is null</exception>
-        public void AcceptConnection(IClientSocketWrapper connection)
+        public void AcceptConnection(INetworkStreamWrapper connection)
         {
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));

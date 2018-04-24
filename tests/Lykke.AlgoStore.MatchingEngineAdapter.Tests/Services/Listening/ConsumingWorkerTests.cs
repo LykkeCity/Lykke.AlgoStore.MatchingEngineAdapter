@@ -19,25 +19,25 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         [Test]
         public void ConsumingWorker_SubmitsCorrectResponse_ForPingMessage()
         {
-            var requestQueueMock = Given_CorrectRequestQueueMock();
+            var messageQueueMock = Given_CorrectMessageQueueMock();
             var matchingEngineAdapterMock = Given_CorrectMatchingEngineAdapterMock();
             var logMock = Given_Log();
 
-            var consumingWorker = new ConsumingWorker(requestQueueMock.Object, matchingEngineAdapterMock.Object, logMock);
+            var consumingWorker = new ConsumingWorker(messageQueueMock.Object, matchingEngineAdapterMock.Object, logMock);
             
             Thread.Sleep(1000);
 
             consumingWorker.Dispose();
-            requestQueueMock.Verify();
+            messageQueueMock.Verify();
         }
 
-        private Mock<IRequestQueue> Given_CorrectRequestQueueMock()
+        private Mock<IMessageQueue> Given_CorrectMessageQueueMock()
         {
-            var requestQueueMock = new Mock<IRequestQueue>(MockBehavior.Strict);
+            var messageQueueMock = new Mock<IMessageQueue>(MockBehavior.Strict);
             var firstTime = true;
 
-            requestQueueMock.Setup(r => r.Dequeue(It.IsAny<CancellationToken>()))
-                            .Returns(Given_CorrectRequestInfo())
+            messageQueueMock.Setup(r => r.Dequeue(It.IsAny<CancellationToken>()))
+                            .Returns(Given_CorrectMessageInfo())
                             .Callback(() =>
                                 {
                                     if (firstTime)
@@ -49,23 +49,23 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
                                     throw new OperationCanceledException();
                                 });
 
-            return requestQueueMock;
+            return messageQueueMock;
         }
 
-        private IRequestInfo Given_CorrectRequestInfo()
+        private IMessageInfo Given_CorrectMessageInfo()
         {
-            var requestInfoMock = new Mock<IRequestInfo>(MockBehavior.Strict);
+            var messageInfoMock = new Mock<IMessageInfo>(MockBehavior.Strict);
             var pingRequest = new PingRequest { Message = "test" };
 
-            requestInfoMock.SetupGet(r => r.Id)
+            messageInfoMock.SetupGet(r => r.Id)
                 .Returns(1);
 
-            requestInfoMock.SetupGet(r => r.Message)
+            messageInfoMock.SetupGet(r => r.Message)
                 .Returns(pingRequest);
 
-            requestInfoMock.Setup(r => r.Reply(MeaResponseType.Pong, pingRequest));
+            messageInfoMock.Setup(r => r.Reply(MeaResponseType.Pong, pingRequest));
 
-            return requestInfoMock.Object;
+            return messageInfoMock.Object;
         }
 
         private Mock<IMatchingEngineAdapter> Given_CorrectMatchingEngineAdapterMock()

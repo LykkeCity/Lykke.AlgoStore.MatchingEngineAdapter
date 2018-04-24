@@ -40,8 +40,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
             builder.RegisterType<ProducerLoadBalancer>()
                 .As<IProducerLoadBalancer>();
 
-            builder.RegisterType<RequestQueue>()
-                .As<IRequestQueue>()
+            builder.RegisterType<MessageQueue>()
+                .As<IMessageQueue>()
                 .SingleInstance();
 
             builder.RegisterType<AlgoInstanceTradeRepository>()

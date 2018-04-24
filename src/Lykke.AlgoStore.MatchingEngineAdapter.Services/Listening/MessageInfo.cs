@@ -7,9 +7,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     /// <summary>
     /// Contains information about a given message
     /// </summary>
-    internal class RequestInfo : IRequestInfo
+    internal class MessageInfo : IMessageInfo
     {
-        private readonly IClientSocketWrapper _socket;
+        private readonly INetworkStreamWrapper _socket;
 
         /// <summary>
         /// The request ID
@@ -22,11 +22,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         public object Message { get; set; }
 
         /// <summary>
-        /// Initializes a <see cref="RequestInfo"/> using a given <see cref="IClientSocketWrapper"/>
+        /// Initializes a <see cref="MessageInfo"/> using a given <see cref="INetworkStreamWrapper"/>
         /// </summary>
-        /// <param name="socket">A <see cref="IClientSocketWrapper"/> to use for replying with messages</param>
+        /// <param name="socket">A <see cref="INetworkStreamWrapper"/> to use for replying with messages</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="socket"/> is null</exception>
-        public RequestInfo(IClientSocketWrapper socket)
+        public MessageInfo(INetworkStreamWrapper socket)
         {
             _socket = socket ?? throw new ArgumentNullException(nameof(socket));
         }
@@ -39,7 +39,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <param name="message">The message</param>
         public void Reply<T>(MeaResponseType messageType, T message)
         {
-            _socket.WriteMessage(Id, messageType, message);
+            _socket.WriteMessage(Id, (byte)messageType, message);
         }
     }
 }
