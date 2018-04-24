@@ -18,7 +18,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         /// A <see cref="WaitHandle"/> which can be used to wait for the response and
         /// the unique request ID which must be used to retrieve the response later
         /// </returns>
-        (WaitHandle waitHandle, uint requestId) MakeRequest<T>(MeaRequestType requestType, T message);
+        (WaitHandle, uint) MakeRequest<T>(MeaRequestType requestType, T message);
 
         /// <summary>
         /// Retrieves the response for a given request
