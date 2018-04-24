@@ -4,5 +4,76 @@
         <name>Lykke.AlgoStore.MatchingEngineAdapter.Client</name>
     </assembly>
     <members>
+        <member name="T:Lykke.AlgoStore.MatchingEngineAdapter.Client.ContainerBuilderExtensions">
+            <summary>
+            Provides <see cref="T:Autofac.ContainerBuilder"/> extensions for registering the MEA client services
+            </summary>
+        </member>
+        <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.ContainerBuilderExtensions.RegisterMatchingEngineClient(Autofac.ContainerBuilder,System.Net.IPAddress,System.UInt16)">
+            <summary>
+            Registers the MEA client services to a given <see cref="T:Autofac.ContainerBuilder"/>
+            </summary>
+            <param name="builder">The <see cref="T:Autofac.ContainerBuilder"/> to register the services in</param>
+            <param name="endPoint">The IP address of the matching engine adapter</param>
+            <param name="port">The port of the matching engine adapter</param>
+        </member>
+        <member name="T:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMatchingEngineAdapterClient">
+            <summary>
+            The interface providing easy to use functions for communicating with the matching engine adapter
+            </summary>
+        </member>
+        <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMatchingEngineAdapterClient.Ping(System.String)">
+            <summary>
+            Sends a ping request to the matching engine adapter
+            </summary>
+            <param name="content">The message which the adapter will return</param>
+            <returns>Task which will complete once the response is available</returns>
+        </member>
+        <member name="T:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMeaCommunicator">
+            <summary>
+            Represents a MEA communicator which handles lower-level message writing/reading to the adapter
+            </summary>
+        </member>
+        <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMeaCommunicator.SendRequest``1(System.UInt32,System.Byte,``0)">
+            <summary>
+            Sends a request to the MEA
+            </summary>
+            <typeparam name="T">The object type of the message</typeparam>
+            <param name="messageId">The unique ID of the message</param>
+            <param name="messageType">The type of them essage</param>
+            <param name="message">The message to send</param>
+        </member>
+        <member name="E:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMeaCommunicator.OnMessageReceived">
+            <summary>
+            Event which is fired when a message is received from the MEA
+            </summary>
+        </member>
+        <member name="T:Lykke.AlgoStore.MatchingEngineAdapter.Client.IRequestManager">
+            <summary>
+            Represents a request manager which uses WaitHandles to signal when a response has been received
+            </summary>
+        </member>
+        <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IRequestManager.MakeRequest``1(Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests.MeaRequestType,``0)">
+            <summary>
+            Makes a request to the MEA
+            </summary>
+            <typeparam name="T">The object type of the message</typeparam>
+            <param name="requestType">The type of the request</param>
+            <param name="message">The message to send</param>
+            <returns>
+            A <see cref="T:System.Threading.WaitHandle"/> which can be used to wait for the response and
+            the unique request ID which must be used to retrieve the response later
+            </returns>
+        </member>
+        <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IRequestManager.GetResponse(System.UInt32)">
+            <summary>
+            Retrieves the response for a given request
+            </summary>
+            <param name="requestId">The request ID to retrieve the response for</param>
+            <returns>The response</returns>
+            <exception cref="T:System.Collections.Generic.KeyNotFoundException">
+            Thrown when the <paramref name="requestId"/> is invalid or the response has not been received yet
+            </exception>
+        </member>
     </members>
 </doc>

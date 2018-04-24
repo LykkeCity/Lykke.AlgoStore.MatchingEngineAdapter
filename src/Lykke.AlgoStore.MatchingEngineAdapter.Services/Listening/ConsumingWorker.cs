@@ -102,7 +102,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         }
 
         /// <summary>
-        /// Handles a <see cref="PingMessage"/> by replying with <see cref="MeaResponseType.Pong"/> containing
+        /// Handles a <see cref="PingRequest"/> by replying with <see cref="MeaResponseType.Pong"/> containing
         /// the same message
         /// </summary>
         /// <param name="request">The <see cref="MessageInfo"/> containing the message</param>
@@ -118,7 +118,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Handles a <see cref="MarketOrderRequest"/> by replying with <see cref="ResponseModel{T}"/> containing
         /// the response message />
         /// </summary>
-        /// <param name="request">The <see cref="RequestInfo"/> containing the message</param>
+        /// <param name="request">The <see cref="MessageInfo"/> containing the message</param>
         private void MarketOrderRequestHandler(IMessageInfo request)
         {
             var msg = (MarketOrderRequest) request.Message;
