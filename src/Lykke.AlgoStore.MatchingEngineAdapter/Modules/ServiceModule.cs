@@ -1,6 +1,8 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using AzureStorage.Tables;
 using Common.Log;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Entities;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
@@ -15,7 +17,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
     {
         private readonly IReloadingManager<AppSettings> _settings;
         private readonly ILog _log;
-        // NOTE: you can remove it if you don't need to use IServiceCollection extensions to register service specific dependencies
         private readonly IServiceCollection _services;
 
         public ServiceModule(IReloadingManager<AppSettings> settings, ILog log)
@@ -44,13 +45,17 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
                 .As<IMessageQueue>()
                 .SingleInstance();
 
-            builder.RegisterType<AlgoInstanceTradeRepository>()
-                .As<IAlgoInstanceTradeRepository>()
-                .SingleInstance();
-
-            // TODO: Add your dependencies here
+            builder.RegisterInstance<IAlgoInstanceTradeRepository>(CreateAlgoTradeRepository(
+                _settings.Nested(x => x.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString), _log)).SingleInstance();
 
             builder.Populate(_services);
+        }
+
+        private static AlgoInstanceTradeRepository CreateAlgoTradeRepository(IReloadingManager<string> connectionString,
+            ILog log)
+        {
+            return new AlgoInstanceTradeRepository(
+                AzureTableStorage<AlgoInstanceTradeEntity>.Create(connectionString, AlgoInstanceTradeRepository.TableName, log));
         }
     }
 }
