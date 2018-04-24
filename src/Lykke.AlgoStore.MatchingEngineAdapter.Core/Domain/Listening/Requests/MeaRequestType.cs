@@ -2,6 +2,7 @@
 {
     public enum MeaRequestType
     {
-        Ping = 0
+        Ping = 0,
+        MarketOrderRequest = 1
     }
 }

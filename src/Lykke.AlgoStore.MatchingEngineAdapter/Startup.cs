@@ -37,7 +37,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
                 Log = CreateLogWithSlack(services, appSettings);
 
-                builder.RegisterModule(new ServiceModule(appSettings.Nested(x => x.AlgoStoreMatchingEngineAdapter), Log));
+                builder.RegisterModule(new ServiceModule(appSettings, Log));
                 builder.Populate(services);
                 ApplicationContainer = builder.Build();
 
