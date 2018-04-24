@@ -5,6 +5,10 @@ using System.Linq;
 using System.Threading;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Enumerators;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -12,16 +16,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     /// Listens for incoming requests on a set of <see cref="INetworkStreamWrapper"/> and
     /// handles events like network failures and invalid requests
     /// </summary>
-    internal class ProducingWorker : IDisposable
+    public class ProducingWorker : IDisposable
     {
         private readonly List<INetworkStreamWrapper> _sockets = new List<INetworkStreamWrapper>();
         private readonly IMessageQueue _requestQueue;
+        private readonly IAlgoClientInstanceRepository _algoClientInstanceRepository;
         private readonly Thread _worker;
         private readonly object _sync = new object();
         private readonly ManualResetEvent _hasConnectionsEvent = new ManualResetEvent(false);
 
         private readonly ILog _log;
-
 
         private IAsyncResult[] _readArray;
         private WaitHandle[] _waitHandleArray;
@@ -37,10 +41,18 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Initializes a new instance of <see cref="ProducingWorker"/>
         /// </summary>
         /// <param name="requestQueue">The <see cref="IMessageQueue"/> to use for queueing incoming requests for processing</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ProducingWorker(IMessageQueue requestQueue, [NotNull] ILog log)
+        /// <param name="algoClientInstanceRepository">The <see cref="IAlgoClientInstanceRepository"/> to use for validating connections</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="requestQueue"/>, <paramref name="algoClientInstanceRepository"/>
+        /// or <paramref name="log"/> are null
+        /// </exception>
+        public ProducingWorker(
+            IMessageQueue requestQueue, 
+            IAlgoClientInstanceRepository algoClientInstanceRepository, 
+            [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
+            _algoClientInstanceRepository = algoClientInstanceRepository ?? throw new ArgumentNullException(nameof(algoClientInstanceRepository));
             _log = log ?? throw new ArgumentNullException(nameof(log));
 
             _worker = new Thread(AcceptMessages);
@@ -171,8 +183,19 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     if (!RunAndCatchDisconnection(() => _sockets[index].EndReadMessage(result), out IMessageInfo request, _sockets[index]))
                         continue;
 
-                    // Queue the message for processing
-                    _requestQueue.Enqueue(request);
+                    var isAuthenticated = _sockets[index].IsAuthenticated;
+
+                    if (!TryAuthenticate(_sockets[index], request))
+                    {
+                        request.Reply((byte)MeaResponseType.Pong, new PingRequest { Message = "Fail" });
+                        HandleDisconnect(_sockets[index]);
+                        continue;
+                    }
+                    else if (isAuthenticated) // If TryAuthenticate returns true and the connection was authed before, queue message
+                    {
+                        // Queue the message for processing
+                        _requestQueue.Enqueue(request);
+                    }
 
                     // Start waiting for a new message
                     if (!RunAndCatchDisconnection(() => _sockets[index].BeginReadMessage(null, null), out IAsyncResult newResult, _sockets[index]))
@@ -246,13 +269,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             }
             catch (System.IO.InvalidDataException e)
             {
-                _log.WriteErrorAsync(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), null, e).Wait();
-                Console.WriteLine($"Client sent invalid data, dropping connection: {e}");
+                _log.WriteWarning(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), $"Client sent invalid data, dropping connection: {e}");
             }
             catch (Exception e) when (e is System.IO.IOException || e is ObjectDisposedException)
             {
-                _log.WriteErrorAsync(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), null, e).Wait();
-                Console.WriteLine($"Connection to client was lost: {e}");
+                _log.WriteInfo(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), $"Connection to client was lost: {e}");
             }
 
             HandleDisconnect(connection);
@@ -260,5 +281,56 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             result = default(T);
             return false;
         } 
+
+        private bool TryAuthenticate(INetworkStreamWrapper connection, IMessageInfo messageInfo)
+        {
+            if (!connection.AuthenticationEnabled || connection.IsAuthenticated) return true;
+
+            var pingRequest = messageInfo.Message as PingRequest;
+
+            if (pingRequest == null)
+            {
+                _log.WriteWarning(nameof(ProducingWorker), nameof(TryAuthenticate),
+                    $"Connection didn't send {nameof(PingRequest)} as the first message, dropping connection!");
+                return false;
+            }
+
+            if(string.IsNullOrEmpty(pingRequest.Message))
+            {
+                _log.WriteWarning(nameof(ProducingWorker), nameof(TryAuthenticate),
+                    $"Connection sent empty {nameof(PingRequest)}, dropping connection!");
+                return false;
+            }
+
+            var splitString = pingRequest.Message.Split('_', StringSplitOptions.RemoveEmptyEntries);
+
+            if (splitString.Length != 2)
+            {
+                _log.WriteWarning(nameof(ProducingWorker), nameof(TryAuthenticate),
+                    $"Connection sent invalid format {nameof(PingRequest)}, dropping connection!");
+                return false;
+            }
+
+            if (!_algoClientInstanceRepository.ExistsAlgoInstanceDataWithClientIdAsync(splitString[0], splitString[1]).Result)
+            {
+                _log.WriteWarning(nameof(ProducingWorker), nameof(TryAuthenticate),
+                    $"Connection sent {nameof(PingRequest)} containing unknown client ID/instance ID combination, dropping connection!");
+                return false;
+            }
+
+            if(_algoClientInstanceRepository
+                .GetAlgoInstanceDataByClientIdAsync(splitString[0], splitString[1])
+                .Result
+                .AlgoInstanceStatus != AlgoInstanceStatus.Started)
+            {
+                _log.WriteWarning(nameof(ProducingWorker), nameof(TryAuthenticate),
+                    $"Connection sent {nameof(PingRequest)} containing algo instance with status different from started, dropping connection!");
+                return false;
+            }
+
+            connection.MarkAuthenticated();
+            messageInfo.Reply((byte)MeaResponseType.Pong, new PingRequest { Message = "Success" });
+            return true;
+        }
     }
 }

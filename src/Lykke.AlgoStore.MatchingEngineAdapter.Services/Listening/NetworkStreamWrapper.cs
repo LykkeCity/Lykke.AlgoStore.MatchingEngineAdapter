@@ -1,4 +1,5 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
+﻿using Common.Log;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using ProtoBuf;
 using System;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -22,17 +24,41 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
         private readonly NetworkStream _networkStream;
         private readonly Dictionary<MeaRequestType, Type> _messageTypeMap;
+        private readonly ILog _log;
+        private readonly Timer _authenticationTimer;
 
         private readonly object _sync = new object();
 
         private bool _isDisposed;
+        private bool _isAuthenticated;
+
+        public bool AuthenticationEnabled => _authenticationTimer != null;
+        public bool IsAuthenticated => _isAuthenticated;
 
         /// <summary>
         /// Initializes a <see cref="NetworkStreamWrapper"/> using a given <see cref="NetworkStream"/>
         /// </summary>
         /// <param name="networkStream">The <see cref="NetworkStream"/> to wrap</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="networkStream"/> is null</exception>
-        public NetworkStreamWrapper(NetworkStream networkStream) : this(networkStream, _defaultMessageTypeMap)
+        /// /// <param name="log">The logger to use</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="networkStream"/> or <paramref name="log"/> is null
+        /// </exception>
+        public NetworkStreamWrapper(NetworkStream networkStream, ILog log) 
+            : this(networkStream, log, false)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a <see cref="NetworkStreamWrapper"/> using a given <see cref="NetworkStream"/>
+        /// </summary>
+        /// <param name="networkStream">The <see cref="NetworkStream"/> to wrap</param>
+        /// <param name="log">The logger to use</param>
+        /// <param name="useAuthentication">Whether the connection is required to be authenticated or not</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="networkStream"/> or <paramref name="log"/> is null
+        /// </exception>
+        public NetworkStreamWrapper(NetworkStream networkStream, ILog log, bool useAuthentication)
+            : this(networkStream, log, useAuthentication, _defaultMessageTypeMap)
         {
         }
 
@@ -40,12 +66,21 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Initializes a <see cref="NetworkStreamWrapper"/> using a given <see cref="NetworkStream"/> and type map
         /// </summary>
         /// <param name="networkStream">The <see cref="NetworkStream"/> to wrap</param>
+        /// <param name="log">The logger to use</param>
+        /// <param name="useAuthentication">Whether the connection is required to be authenticated or not</param>
         /// <param name="messageTypeMap">The type map to use when deserializing messages</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="networkStream"/> is null</exception>
-        public NetworkStreamWrapper(NetworkStream networkStream, Dictionary<MeaRequestType, Type> messageTypeMap)
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="networkStream"/> or <paramref name="log"/> is null
+        /// </exception>
+        public NetworkStreamWrapper(NetworkStream networkStream, ILog log, bool useAuthentication, 
+            Dictionary<MeaRequestType, Type> messageTypeMap)
         {
             _networkStream = networkStream ?? throw new ArgumentNullException(nameof(networkStream));
+            _log = log ?? throw new ArgumentNullException(nameof(_log));
             _messageTypeMap = messageTypeMap ?? _defaultMessageTypeMap;
+
+            if(useAuthentication)
+                _authenticationTimer = new Timer(EnsureAuthenticated, null, 10_000, Timeout.Infinite);
         }
 
         /// <summary>
@@ -141,6 +176,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             }
         }
 
+        public void MarkAuthenticated()
+        {
+            _isAuthenticated = true;
+        }
+
         /// <summary>
         /// Disposes the wrapper and closes the underlying connection
         /// </summary>
@@ -194,10 +234,21 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             return result;
         }
 
+        private void EnsureAuthenticated(object state)
+        {
+            if (_isDisposed) return;
+
+            if (_isAuthenticated) return;
+
+            _log.WriteWarning(nameof(NetworkStreamWrapper), nameof(EnsureAuthenticated),
+                "Client failed to authenticate within the time limit, disposing connection!");
+            Dispose();
+        }
+
         private void CheckDisposed()
         {
             if (_isDisposed)
-                throw new ObjectDisposedException("The socket wrapper has been disposed");
+                throw new ObjectDisposedException(nameof(NetworkStreamWrapper), "The stream wrapper has been disposed");
         }
     }
 }

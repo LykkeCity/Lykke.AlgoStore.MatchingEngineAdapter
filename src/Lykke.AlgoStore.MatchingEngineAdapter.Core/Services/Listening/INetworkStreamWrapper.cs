@@ -8,6 +8,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening
         IMessageInfo EndReadMessage(IAsyncResult asyncResult);
         IMessageInfo ReadMessage();
 
+        void MarkAuthenticated();
+
+        bool AuthenticationEnabled { get; }
+        bool IsAuthenticated { get; }
+
         void WriteMessage<T>(uint messageId, byte messageType, T message);
     }
 }

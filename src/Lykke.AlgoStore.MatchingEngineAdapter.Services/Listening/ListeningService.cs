@@ -110,7 +110,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     {
                         var socket = _listener.EndAcceptSocket(result);
                         var networkStream = new NetworkStream(socket, ownsSocket: true);
-                        _producerLoadBalancer.AcceptConnection(new NetworkStreamWrapper(networkStream));
+                        _producerLoadBalancer.AcceptConnection(new NetworkStreamWrapper(networkStream, _log, true));
                     }
                     catch (ObjectDisposedException exception)
                     {

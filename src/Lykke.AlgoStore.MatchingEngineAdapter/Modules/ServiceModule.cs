@@ -48,6 +48,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
             builder.RegisterInstance<IAlgoInstanceTradeRepository>(CreateAlgoTradeRepository(
                 _settings.Nested(x => x.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString), _log)).SingleInstance();
 
+            builder.RegisterInstance<IAlgoClientInstanceRepository>(CreateAlgoClientInstanceRepository(
+                _settings.Nested(x => x.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString), _log)).SingleInstance();
+
             builder.Populate(_services);
         }
 
@@ -56,6 +59,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
         {
             return new AlgoInstanceTradeRepository(
                 AzureTableStorage<AlgoInstanceTradeEntity>.Create(connectionString, AlgoInstanceTradeRepository.TableName, log));
+        }
+
+        private static AlgoClientInstanceRepository CreateAlgoClientInstanceRepository(IReloadingManager<string> connectionString,
+            ILog log)
+        {
+            return new AlgoClientInstanceRepository(
+                AzureTableStorage<AlgoClientInstanceEntity>.Create(connectionString, AlgoClientInstanceRepository.TableName, log));
         }
     }
 }

@@ -43,7 +43,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
             _tcpClient.Connect(_ipAddress, _port);
             var networkStream = _tcpClient.GetStream();
-            _networkStreamWrapper = new NetworkStreamWrapper(networkStream);
+            _networkStreamWrapper = new NetworkStreamWrapper(networkStream, _log);
         }
 
         private void AcceptMessages(object cancellationTokenObj)
