@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -19,6 +20,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
         private readonly List<ProducingWorker> _workers = new List<ProducingWorker>();
         private readonly IMessageQueue _requestQueue;
+        private readonly IAlgoClientInstanceRepository _algoClientInstanceRepository;
         private readonly ILog _log;
 
         private bool _isDisposed;
@@ -27,10 +29,17 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Initializes a new instance of <see cref="ProducerLoadBalancer"/>
         /// </summary>
         /// <param name="requestQueue">The <see cref="IMessageQueue"/> to use for queueing incoming requests for processing</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
-        public ProducerLoadBalancer(IMessageQueue requestQueue, [NotNull] ILog log)
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="requestQueue"/>, <paramref name="algoClientInstanceRepository"/>
+        /// or <paramref name="log"/> are null
+        /// </exception>
+        public ProducerLoadBalancer(
+            IMessageQueue requestQueue,
+            IAlgoClientInstanceRepository algoClientInstanceRepository,
+            [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
+            _algoClientInstanceRepository = algoClientInstanceRepository ?? throw new ArgumentNullException(nameof(algoClientInstanceRepository));
             _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
@@ -70,7 +79,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             if (minConnections == MAX_CONNECTIONS_PER_WORKER)
             {
                 // All workers are on max load, spin up a new one
-                var newWorker = new ProducingWorker(_requestQueue, _log);
+                var newWorker = new ProducingWorker(_requestQueue, _algoClientInstanceRepository, _log);
                 newWorker.AddConnection(connection);
 
                 _workers.Add(newWorker);
