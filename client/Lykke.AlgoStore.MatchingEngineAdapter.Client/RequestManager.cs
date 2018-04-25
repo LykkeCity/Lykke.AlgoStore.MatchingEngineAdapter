@@ -1,5 +1,5 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
+﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

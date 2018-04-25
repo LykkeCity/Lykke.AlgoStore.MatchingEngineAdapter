@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     public interface IMessageQueue
     {

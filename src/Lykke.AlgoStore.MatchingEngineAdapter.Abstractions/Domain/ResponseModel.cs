@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Strings;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Strings;
 using ProtoBuf;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
 {
     public class ResponseModel
     {

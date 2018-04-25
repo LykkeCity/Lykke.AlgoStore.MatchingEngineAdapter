@@ -1,13 +1,12 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
+﻿using Common.Log;
+using JetBrains.Annotations;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services;
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using Common.Log;
-using JetBrains.Annotations;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     /// <summary>
     /// Listens for incoming connections and passes them on to the load balancer

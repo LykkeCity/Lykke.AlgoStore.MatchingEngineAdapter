@@ -1,4 +1,4 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
+﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Client

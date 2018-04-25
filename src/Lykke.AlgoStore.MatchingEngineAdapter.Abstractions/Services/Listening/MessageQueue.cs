@@ -1,9 +1,8 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     /// <summary>
     /// Represents a request queue

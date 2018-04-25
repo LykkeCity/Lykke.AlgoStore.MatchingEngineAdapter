@@ -1,9 +1,9 @@
 ﻿using System;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
 using FeeOrderAction = Lykke.Service.FeeCalculator.AutorestClient.Models.OrderAction;
 using MeOrderAction = Lykke.MatchingEngine.Connector.Abstractions.Models.OrderAction;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions
 {
     public static class Mapper
     {

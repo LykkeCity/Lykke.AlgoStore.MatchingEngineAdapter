@@ -1,4 +1,4 @@
-﻿namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain
+﻿namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
 {
     public enum OrderAction
     {

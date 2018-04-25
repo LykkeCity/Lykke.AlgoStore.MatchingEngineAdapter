@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     /// <summary>
     /// Used to wrap an async result to add some extra fields.

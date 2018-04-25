@@ -1,19 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Common.Log;
+﻿using Common.Log;
 using JetBrains.Annotations;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services;
 using Lykke.MatchingEngine.Connector.Abstractions.Models;
 using Lykke.MatchingEngine.Connector.Abstractions.Services;
 using Lykke.Service.Assets.Client;
 using Lykke.Service.FeeCalculator.Client;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using FeeType = Lykke.Service.FeeCalculator.AutorestClient.Models.FeeType;
-using OrderAction = Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.OrderAction;
+using OrderAction = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.OrderAction;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions
 {
     public class MatchingEngineAdapter : IMatchingEngineAdapter
     {

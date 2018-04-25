@@ -1,15 +1,12 @@
 ﻿using Common.Log;
 using JetBrains.Annotations;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     /// <summary>
     /// Processes queued messages and sends appropriate replies

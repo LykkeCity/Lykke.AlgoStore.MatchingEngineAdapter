@@ -1,6 +1,6 @@
 ﻿using ProtoBuf;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests
 {
     [ProtoContract]
     public class MarketOrderRequest

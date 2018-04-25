@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="6.2.2" />
+    <PackageReference Include="Lykke.AlgoStore.CSharp.AlgoTemplate.Models" Version="1.0.37-beta" />
     <PackageReference Include="Lykke.Common.ApiLibrary" Version="1.4.0" />
     <PackageReference Include="Lykke.Logs" Version="3.6.2" />
     <PackageReference Include="Lykke.MatchingEngineConnector" Version="4.1.1" />
@@ -44,7 +44,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\Lykke.AlgoStore.MatchingEngineAdapter.AzureRepositories\Lykke.AlgoStore.MatchingEngineAdapter.AzureRepositories.csproj" />
+    <ProjectReference Include="..\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.csproj" />
     <ProjectReference Include="..\Lykke.AlgoStore.MatchingEngineAdapter.Core\Lykke.AlgoStore.MatchingEngineAdapter.Core.csproj" />
     <ProjectReference Include="..\Lykke.AlgoStore.MatchingEngineAdapter.Services\Lykke.AlgoStore.MatchingEngineAdapter.Services.csproj" />
   </ItemGroup>
