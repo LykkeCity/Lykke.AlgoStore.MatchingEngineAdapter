@@ -78,7 +78,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
             (var waitHandle, var requestId) = MakeRequest(MeaRequestType.Ping, request);
 
-            ThreadPool.QueueUserWorkItem((state) => 
+            ThreadPool.QueueUserWorkItem((state) =>
             {
                 waitHandle.WaitOne();
 

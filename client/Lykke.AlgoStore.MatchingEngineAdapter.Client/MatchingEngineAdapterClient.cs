@@ -25,13 +25,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         public Task<string> Ping(string content)
         {
             return Task.Run(() => PingSync(content));
-        }       
+        }
 
         private string PingSync(string content)
         {
             var pingRequest = new PingRequest { Message = content };
 
-            _log.WriteInfo(nameof(MatchingEngineAdapterClient), nameof(PingSync), 
+            _log.WriteInfo(nameof(MatchingEngineAdapterClient), nameof(PingSync),
                            $"Sending MEA Ping request with content {content}");
 
             (var waitHandle, var requestId) = _requestManager.MakeRequest(MeaRequestType.Ping, pingRequest);

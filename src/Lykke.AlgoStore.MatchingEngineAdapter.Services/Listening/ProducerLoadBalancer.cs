@@ -1,10 +1,12 @@
-﻿using Common.Log;
-using JetBrains.Annotations;
-using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
+﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
+using Common.Log;
+using JetBrains.Annotations;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
     /// <summary>
     /// Manages the incoming connections by balancing them between <see cref="ProducingWorker"/>
