@@ -1,6 +1,7 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
+﻿
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     public interface IMessageInfo
     {

@@ -2,10 +2,9 @@
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Enumerators;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Models;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
-using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using Moq;
 using NUnit.Framework;
 using System.Net;
@@ -75,7 +74,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         {
             AssertRequestDisconnects(new PingRequest(), (byte)MeaRequestType.Ping);
         }
-        
+
         [Test]
         public void ProducingWorker_ClosesConnection_WhenInvalidPingRequestSent()
         {
@@ -100,7 +99,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 
         [Test]
         public void ProducingWorker_KeepsConnection_WhenAuthenticationCorrect()
-        { 
+        {
             var log = Given_Correct_Log();
             var clientSocketWrapper = Given_Correct_ClientNetworkStreamWrapper(log);
             var listenerSocketWrapper = Given_Correct_ListenerNetworkStreamWrapper(log);
@@ -118,6 +117,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 
         private void AssertRequestDisconnects<T>(T request, byte requestType)
         {
+
             var log = Given_Correct_Log();
             var clientSocketWrapper = Given_Correct_ClientNetworkStreamWrapper(log);
             var listenerSocketWrapper = Given_Correct_ListenerNetworkStreamWrapper(log);
@@ -156,7 +156,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 
             algoClientInstanceRepoMock
                 .Setup(repo => repo.ExistsAlgoInstanceDataWithClientIdAsync(It.IsAny<string>(), It.IsAny<string>()))
-                .ReturnsAsync((string clientId, string instanceId) => 
+                .ReturnsAsync((string clientId, string instanceId) =>
                 {
                     if (clientId == UNKNOWN_GUID_PLACEHOLDER && instanceId == UNKNOWN_GUID_PLACEHOLDER)
                         return false;

@@ -1,8 +1,8 @@
 ﻿using Common.Log;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 using System;
 using System.Threading.Tasks;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 {

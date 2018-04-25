@@ -13,6 +13,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;

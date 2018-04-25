@@ -1,8 +1,7 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
+﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
 using System;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     /// <summary>
     /// Contains information about a given message

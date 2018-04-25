@@ -1,4 +1,4 @@
-﻿namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses
+﻿namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses
 {
     public enum MeaResponseType
     {

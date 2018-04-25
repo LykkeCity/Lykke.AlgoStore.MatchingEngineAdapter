@@ -1,10 +1,10 @@
-﻿using System;
-using Autofac;
+﻿using Autofac;
 using Common.Log;
 using JetBrains.Annotations;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Settings;
 using Lykke.SettingsReader;
+using System;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
 {
@@ -25,7 +25,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
         {
             builder.BindMeClient(_settings.CurrentValue.MatchingEngineClient.IpEndpoint.GetClientIpEndPoint(), socketLog: null, ignoreErrors: true);
 
-            builder.RegisterType<Services.MatchingEngineAdapter>()
+            builder.RegisterType<Abstractions.MatchingEngineAdapter>()
                 .As<IMatchingEngineAdapter>()
                 .WithParameter(TypedParameter.From(_settings.CurrentValue.FeeSettings.TargetClientId.Hft))
                 .SingleInstance();

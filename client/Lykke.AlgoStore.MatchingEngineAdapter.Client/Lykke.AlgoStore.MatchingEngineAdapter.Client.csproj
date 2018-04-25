@@ -38,8 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Lykke.AlgoStore.MatchingEngineAdapter.Core\Lykke.AlgoStore.MatchingEngineAdapter.Core.csproj" />
-    <ProjectReference Include="..\..\src\Lykke.AlgoStore.MatchingEngineAdapter.Services\Lykke.AlgoStore.MatchingEngineAdapter.Services.csproj" />
+    <ProjectReference Include="..\..\src\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,5 @@
 ﻿using Common.Log;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
-using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System;
 using System.Net;
 using System.Net.Sockets;
