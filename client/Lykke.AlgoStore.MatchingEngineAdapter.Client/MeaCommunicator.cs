@@ -14,11 +14,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         private readonly ushort _port;
         private readonly ILog _log;
 
-        private readonly Thread _workerThread;
-        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-
+        private Thread _workerThread;
+        private CancellationTokenSource _cts;
         private NetworkStreamWrapper _networkStreamWrapper;
 
+        public event Action OnConnectionEstablished;
         public event Action<IMessageInfo> OnMessageReceived;
 
         public MeaCommunicator(ILog log, IPAddress ipAddress, ushort port)
@@ -29,9 +29,22 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
             _log.WriteInfo(nameof(MeaCommunicator), nameof(MeaCommunicator),
                            $"Initializing MEA communicator with target address {_ipAddress}:{_port}");
+        }
+
+        public void Start()
+        {
+            if (_workerThread != null) return;
+
+            _cts = new CancellationTokenSource();
 
             _workerThread = new Thread(AcceptMessages);
             _workerThread.Start(_cts.Token);
+        }
+
+        public void SendRequest<T>(uint messageId, byte messageType, T message)
+        {
+            EnsureConnected();
+            _networkStreamWrapper.WriteMessage(messageId, messageType, message);
         }
 
         private void EnsureConnected()
@@ -43,6 +56,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _tcpClient.Connect(_ipAddress, _port);
             var networkStream = _tcpClient.GetStream();
             _networkStreamWrapper = new NetworkStreamWrapper(networkStream, _log);
+
+            OnConnectionEstablished?.Invoke();
         }
 
         private void AcceptMessages(object cancellationTokenObj)
@@ -63,12 +78,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
                     Console.WriteLine(e);
                 }
             }
-        }
-
-        public void SendRequest<T>(uint messageId, byte messageType, T message)
-        {
-            EnsureConnected();
-            _networkStreamWrapper.WriteMessage(messageId, messageType, message);
         }
     }
 }
