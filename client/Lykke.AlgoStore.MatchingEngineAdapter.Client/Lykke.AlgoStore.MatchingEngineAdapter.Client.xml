@@ -83,6 +83,13 @@
             Represents a request manager which uses WaitHandles to signal when a response has been received
             </summary>
         </member>
+        <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IRequestManager.SetClientAndInstanceId(System.String,System.String)">
+            <summary>
+            Sets the current instance ID and client ID
+            </summary>
+            <param name="clientId">The client ID of the algo instance</param>
+            <param name="instanceId">The ID of the algo instance</param>
+        </member>
         <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IRequestManager.MakeRequest``1(Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests.MeaRequestType,``0)">
             <summary>
             Makes a request to the MEA
