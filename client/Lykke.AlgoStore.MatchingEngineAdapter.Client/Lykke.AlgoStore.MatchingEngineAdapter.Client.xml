@@ -22,6 +22,13 @@
             The interface providing easy to use functions for communicating with the matching engine adapter
             </summary>
         </member>
+        <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMatchingEngineAdapterClient.SetClientAndInstanceId(System.String,System.String)">
+            <summary>
+            Sets the current instance ID and client ID
+            </summary>
+            <param name="clientId">The client ID of the algo instance</param>
+            <param name="instanceId">The ID of the algo instance</param>
+        </member>
         <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMatchingEngineAdapterClient.Ping(System.String)">
             <summary>
             Sends a ping request to the matching engine adapter
@@ -47,6 +54,11 @@
             Represents a MEA communicator which handles lower-level message writing/reading to the adapter
             </summary>
         </member>
+        <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMeaCommunicator.Start">
+            <summary>
+            Starts the MEA communicator
+            </summary>
+        </member>
         <member name="M:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMeaCommunicator.SendRequest``1(System.UInt32,System.Byte,``0)">
             <summary>
             Sends a request to the MEA
@@ -55,6 +67,11 @@
             <param name="messageId">The unique ID of the message</param>
             <param name="messageType">The type of them essage</param>
             <param name="message">The message to send</param>
+        </member>
+        <member name="E:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMeaCommunicator.OnConnectionEstablished">
+            <summary>
+            Event which is fired when the connection to the MEA is opened
+            </summary>
         </member>
         <member name="E:Lykke.AlgoStore.MatchingEngineAdapter.Client.IMeaCommunicator.OnMessageReceived">
             <summary>
