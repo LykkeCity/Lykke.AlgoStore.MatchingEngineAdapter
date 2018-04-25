@@ -8,8 +8,7 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
-using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests.MarketOrderRequest;
+using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests.MarketOrderRequest;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {

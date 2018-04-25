@@ -29,10 +29,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Domain\Listening\Responses\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.csproj" />
   </ItemGroup>
 

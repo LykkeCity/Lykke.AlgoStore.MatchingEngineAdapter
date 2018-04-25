@@ -11,7 +11,7 @@ using System.Net.Sockets;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
-using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests.MarketOrderRequest;
+using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests.MarketOrderRequest;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 {
