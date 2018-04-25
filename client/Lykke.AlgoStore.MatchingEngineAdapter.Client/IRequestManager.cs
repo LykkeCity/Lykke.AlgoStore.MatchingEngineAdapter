@@ -9,6 +9,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
     public interface IRequestManager
     {
         /// <summary>
+        /// Sets the current instance ID and client ID
+        /// </summary>
+        /// <param name="clientId">The client ID of the algo instance</param>
+        /// <param name="instanceId">The ID of the algo instance</param>
+        void SetClientAndInstanceId(string clientId, string instanceId);
+
+        /// <summary>
         /// Makes a request to the MEA
         /// </summary>
         /// <typeparam name="T">The object type of the message</typeparam>
