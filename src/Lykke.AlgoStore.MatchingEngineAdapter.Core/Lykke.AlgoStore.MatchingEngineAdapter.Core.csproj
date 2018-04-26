@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Lykke.AlgoStore.MatchingEngineAdapter.Abstractions" Version="1.0.4-beta" />
     <PackageReference Include="Lykke.Common" Version="6.1.1" />
     <PackageReference Include="Lykke.MatchingEngineConnector.Abstractions" Version="4.1.1" />
     <PackageReference Include="protobuf-net" Version="2.3.7" />
@@ -26,10 +27,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ErrorMessages.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>
