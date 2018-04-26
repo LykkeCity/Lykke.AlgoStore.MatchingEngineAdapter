@@ -1,15 +1,17 @@
 ﻿using Common.Log;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
+using Lykke.MatchingEngine.Connector.Abstractions.Models;
 using Moq;
 using NUnit.Framework;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 {
@@ -24,7 +26,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             var logMock = Given_Log();
 
             var consumingWorker = new ConsumingWorker(messageQueueMock.Object, matchingEngineAdapterMock.Object, logMock);
-            
+
             Thread.Sleep(1000);
 
             consumingWorker.Dispose();
@@ -39,15 +41,15 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             messageQueueMock.Setup(r => r.Dequeue(It.IsAny<CancellationToken>()))
                             .Returns(Given_CorrectMessageInfo())
                             .Callback(() =>
+                            {
+                                if (firstTime)
                                 {
-                                    if (firstTime)
-                                    {
-                                        firstTime = false;
-                                        return;
-                                    }
+                                    firstTime = false;
+                                    return;
+                                }
 
-                                    throw new OperationCanceledException();
-                                });
+                                throw new OperationCanceledException();
+                            });
 
             return messageQueueMock;
         }
@@ -74,7 +76,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             var firstTime = true;
             var result = new ResponseModel<double>();
 
-            matchingEngineAdapterMock.Setup(r => r.HandleMarketOrderAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<OrderAction>(), It.IsAny<double>(),
+            matchingEngineAdapterMock.Setup(r => r.HandleMarketOrderAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Abstractions.Domain.OrderAction>(), It.IsAny<double>(),
                     It.IsAny<bool>(), It.IsAny<string>(), null))
                 .Returns(Task.FromResult(result))
                 .Callback(() =>

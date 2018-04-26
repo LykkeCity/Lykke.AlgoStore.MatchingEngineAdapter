@@ -1,4 +1,4 @@
-﻿namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests
+﻿namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests
 {
     public enum MeaRequestType
     {

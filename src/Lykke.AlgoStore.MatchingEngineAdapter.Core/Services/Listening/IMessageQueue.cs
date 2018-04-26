@@ -1,4 +1,5 @@
 ﻿using System.Threading;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening
 {

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Strings {
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Strings {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Strings {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Lykke.AlgoStore.MatchingEngineAdapter.Core.Strings.ErrorMessages", typeof(ErrorMessages).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Strings.ErrorMessages", typeof(ErrorMessages).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

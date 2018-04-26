@@ -1,14 +1,15 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
+﻿using Common.Log;
+using JetBrains.Annotations;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Enumerators;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Common.Log;
-using JetBrains.Annotations;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
-using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
-using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Enumerators;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {

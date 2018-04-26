@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {

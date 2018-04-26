@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
+﻿namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
 {
     public class ListenerSettings
     {

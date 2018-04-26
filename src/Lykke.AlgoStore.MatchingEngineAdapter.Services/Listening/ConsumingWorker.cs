@@ -1,13 +1,14 @@
 ﻿using Common.Log;
 using JetBrains.Annotations;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Requests;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain.Listening.Responses;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
+using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests.MarketOrderRequest;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -102,7 +103,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         }
 
         /// <summary>
-        /// Handles a <see cref="PingMessage"/> by replying with <see cref="MeaResponseType.Pong"/> containing
+        /// Handles a <see cref="PingRequest"/> by replying with <see cref="MeaResponseType.Pong"/> containing
         /// the same message
         /// </summary>
         /// <param name="request">The <see cref="MessageInfo"/> containing the message</param>
@@ -118,10 +119,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Handles a <see cref="MarketOrderRequest"/> by replying with <see cref="ResponseModel{T}"/> containing
         /// the response message />
         /// </summary>
-        /// <param name="request">The <see cref="RequestInfo"/> containing the message</param>
+        /// <param name="request">The <see cref="MessageInfo"/> containing the message</param>
         private void MarketOrderRequestHandler(IMessageInfo request)
         {
-            var msg = (MarketOrderRequest) request.Message;
+            var msg = (MarketOrderRequest)request.Message;
 
             var result = _matchingEngineAdapter.HandleMarketOrderAsync(msg.ClientId, msg.AssetPairId, msg.OrderAction,
                 msg.Volume, msg.IsStraight, msg.InstanceId);

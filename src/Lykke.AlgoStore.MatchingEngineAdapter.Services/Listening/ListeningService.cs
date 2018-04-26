@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -124,7 +125,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
                 var asyncResult = _listener.BeginAcceptSocket(callback, null);
 
-                while (!autoResetEvent.WaitOne(500) && !cancellationToken.IsCancellationRequested);
+                while (!autoResetEvent.WaitOne(500) && !cancellationToken.IsCancellationRequested) ;
             }
         }
     }
