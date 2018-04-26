@@ -8,8 +8,8 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
 using Moq;
 using NUnit.Framework;
-using System.Net;
-using System.Net.Sockets;
+using System;
+using System.Threading;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 {
@@ -19,50 +19,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         private const string UNKNOWN_GUID_PLACEHOLDER = "guid";
         private const string KNOWN_GUID_PLACEHOLDER = "knownguid";
         private const string STARTED_GUID_PLACEHOLDER = "startedguid";
-
-        private TcpListener _tcpListener;
-        private TcpClient _tcpClient;
-
-        private NetworkStream _listenerStream;
-        private NetworkStream _clientStream;
-
-        [SetUp]
-        public void SetupConnections()
-        {
-            _tcpListener = new TcpListener(IPAddress.Any, 23456);
-            _tcpListener.Start();
-
-            _tcpClient = new TcpClient();
-            _tcpClient.Connect(IPAddress.Loopback, 23456);
-
-            _listenerStream = new NetworkStream(_tcpListener.AcceptSocket(), true);
-            _clientStream = _tcpClient.GetStream();
-        }
-
-        [TearDown]
-        public void CleanupConnections()
-        {
-            _clientStream?.Close();
-            _clientStream?.Dispose();
-
-            _tcpClient?.Close();
-            _tcpClient?.Dispose();
-
-            _listenerStream?.Close();
-            _listenerStream?.Dispose();
-
-            _tcpListener?.Stop();
-        }
-
-        [Test, Explicit("This test takes a long time to finish")]
-        public void NetworkStreamWrapper_ClosesConnection_WhenNoMessageSent()
-        {
-            var log = Given_Correct_Log();
-            var clientSocketWrapper = Given_Correct_ClientNetworkStreamWrapper(log);
-            var listenerSocketWrapper = Given_Correct_ListenerNetworkStreamWrapper(log);
-
-            Assert.Throws<System.IO.EndOfStreamException>(() => clientSocketWrapper.ReadMessage());
-        }
 
         [Test]
         public void ProducingWorker_ClosesConnection_WhenInvalidRequestSent()
@@ -102,36 +58,42 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         public void ProducingWorker_KeepsConnection_WhenAuthenticationCorrect()
         { 
             var log = Given_Correct_Log();
-            var clientSocketWrapper = Given_Correct_ClientNetworkStreamWrapper(log);
-            var listenerSocketWrapper = Given_Correct_ListenerNetworkStreamWrapper(log);
-            var producingWorker = Given_Correct_ProducingWorker(log);
+
             var request = new PingRequest { Message = $"{STARTED_GUID_PLACEHOLDER}_{STARTED_GUID_PLACEHOLDER}" };
+            var asyncResultMock = Given_Verifiable_AsyncResultMock();
+            var messageInfoMock = Given_Verifiable_MessageInfoMock(request, false);
+            var listenerNetworkStreamMock =
+                Given_Verifiable_ListenerNetworkStreamWrapperMock(asyncResultMock.Object, messageInfoMock.Object, false);
 
-            producingWorker.AddConnection(listenerSocketWrapper);
+            var producingWorker = Given_Correct_ProducingWorker(log);
 
-            clientSocketWrapper.WriteMessage(1, (byte)MeaRequestType.Ping, request);
+            producingWorker.AddConnection(listenerNetworkStreamMock.Object);
 
-            var response = clientSocketWrapper.ReadMessage();
+            Thread.Sleep(100);
 
-            Assert.AreEqual("Success", ((PingRequest)response.Message).Message);
+            listenerNetworkStreamMock.Verify();
+            messageInfoMock.Verify();
+            asyncResultMock.Verify();
         }
 
         private void AssertRequestDisconnects<T>(T request, byte requestType)
         {
             var log = Given_Correct_Log();
-            var clientSocketWrapper = Given_Correct_ClientNetworkStreamWrapper(log);
-            var listenerSocketWrapper = Given_Correct_ListenerNetworkStreamWrapper(log);
+
+            var asyncResultMock = Given_Verifiable_AsyncResultMock();
+            var messageInfoMock = Given_Verifiable_MessageInfoMock(request, true);
+            var listenerNetworkStreamMock = 
+                Given_Verifiable_ListenerNetworkStreamWrapperMock(asyncResultMock.Object, messageInfoMock.Object, true);
+
             var producingWorker = Given_Correct_ProducingWorker(log);
 
-            producingWorker.AddConnection(listenerSocketWrapper);
+            producingWorker.AddConnection(listenerNetworkStreamMock.Object);
 
-            clientSocketWrapper.WriteMessage(1, requestType, request);
+            Thread.Sleep(100);
 
-            var failResponse = clientSocketWrapper.ReadMessage();
-
-            Assert.AreEqual("Fail", ((PingRequest)failResponse.Message).Message);
-
-            Assert.Throws<System.IO.EndOfStreamException>(() => clientSocketWrapper.ReadMessage());
+            listenerNetworkStreamMock.Verify();
+            messageInfoMock.Verify();
+            asyncResultMock.Verify();
         }
 
         private ILog Given_Correct_Log()
@@ -140,14 +102,75 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             return logMock.Object;
         }
 
-        private INetworkStreamWrapper Given_Correct_ClientNetworkStreamWrapper(ILog log)
+        private Mock<IAsyncResult> Given_Verifiable_AsyncResultMock()
         {
-            return new NetworkStreamWrapper(_clientStream, log);
+            var asyncResultMock = new Mock<IAsyncResult>(MockBehavior.Strict);
+            asyncResultMock.SetupGet(a => a.AsyncWaitHandle)
+                           .Returns(new ManualResetEvent(true))
+                           .Verifiable();
+
+            return asyncResultMock;
         }
 
-        private INetworkStreamWrapper Given_Correct_ListenerNetworkStreamWrapper(ILog log)
+        private Mock<IMessageInfo> Given_Verifiable_MessageInfoMock(object messageToReturn, bool replyShouldFail)
         {
-            return new NetworkStreamWrapper(_listenerStream, log, true);
+            var messageInfoMock = new Mock<IMessageInfo>(MockBehavior.Strict);
+
+            messageInfoMock.SetupGet(m => m.Message)
+                           .Returns(messageToReturn)
+                           .Verifiable();
+
+            messageInfoMock.Setup(m => m.Reply(MeaResponseType.Pong, It.IsAny<PingRequest>()))
+                           .Callback((MeaResponseType response, PingRequest request) =>
+                           {
+                               if (replyShouldFail)
+                                   Assert.AreEqual("Fail", request.Message);
+                               else
+                                   Assert.AreEqual("Success", request.Message);
+                           })
+                           .Verifiable();
+
+            return messageInfoMock;
+        }
+
+        private Mock<INetworkStreamWrapper> Given_Verifiable_ListenerNetworkStreamWrapperMock(
+            IAsyncResult asyncResult, 
+            IMessageInfo messageInfo,
+            bool shouldFail)
+        {
+            var listenerNetworkStreamMock = new Mock<INetworkStreamWrapper>(MockBehavior.Strict);
+            var isAuthenticated = false;
+
+            if (shouldFail)
+            {
+                listenerNetworkStreamMock.Setup(l => l.Dispose())
+                                         .Verifiable();
+            }
+
+            listenerNetworkStreamMock.Setup(l => l.BeginReadMessage(It.IsAny<AsyncCallback>(), It.IsAny<object>()))
+                                     .Returns(asyncResult)
+                                     .Verifiable();
+
+            listenerNetworkStreamMock.Setup(l => l.EndReadMessage(It.IsAny<IAsyncResult>()))
+                                     .Returns(messageInfo)
+                                     .Verifiable();
+
+            if (!shouldFail)
+            {
+                listenerNetworkStreamMock.Setup(l => l.MarkAuthenticated())
+                                         .Callback(() => isAuthenticated = true)
+                                         .Verifiable();
+            }
+
+            listenerNetworkStreamMock.SetupGet(l => l.IsAuthenticated)
+                                     .Returns(isAuthenticated)
+                                     .Verifiable();
+
+            listenerNetworkStreamMock.SetupGet(l => l.AuthenticationEnabled)
+                                     .Returns(true)
+                                     .Verifiable();
+
+            return listenerNetworkStreamMock;
         }
 
         private IAlgoClientInstanceRepository Given_Correct_AlgoClientInstanceRepository()
