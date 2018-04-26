@@ -1,12 +1,14 @@
-﻿using Common.Log;
-using JetBrains.Annotations;
-using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services;
+﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Common.Log;
+using JetBrains.Annotations;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
     /// <summary>
     /// Listens for incoming connections and passes them on to the load balancer
@@ -123,7 +125,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
                 var asyncResult = _listener.BeginAcceptSocket(callback, null);
 
-                while (!autoResetEvent.WaitOne(500) && !cancellationToken.IsCancellationRequested);
+                while (!autoResetEvent.WaitOne(500) && !cancellationToken.IsCancellationRequested) ;
             }
         }
     }

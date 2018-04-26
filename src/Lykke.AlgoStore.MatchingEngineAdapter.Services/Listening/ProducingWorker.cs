@@ -2,14 +2,16 @@
 using JetBrains.Annotations;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Enumerators;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
     /// <summary>
     /// Listens for incoming requests on a set of <see cref="INetworkStreamWrapper"/> and
@@ -46,8 +48,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// or <paramref name="log"/> are null
         /// </exception>
         public ProducingWorker(
-            IMessageQueue requestQueue,
-            IAlgoClientInstanceRepository algoClientInstanceRepository,
+            IMessageQueue requestQueue, 
+            IAlgoClientInstanceRepository algoClientInstanceRepository, 
             [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
@@ -77,7 +79,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             {
                 _sockets.Add(connection);
 
-                if (_readArray != null)
+                if(_readArray != null)
                 {
                     // Append the new connection async result and wait handle to the arrays
                     var newReadArray = new IAsyncResult[_readArray.Length + 1];
@@ -88,7 +90,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
                     IAsyncResult asyncResult;
 
-                    if (!RunAndCatchDisconnection(() => connection.BeginReadMessage(null, null), out asyncResult, connection))
+                    if(!RunAndCatchDisconnection(() => connection.BeginReadMessage(null, null), out asyncResult, connection))
                         return;
 
                     newReadArray[_readArray.Length] = asyncResult;
@@ -121,7 +123,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         {
             if (_isDisposed) return;
 
-            if (isDisposing)
+            if(isDisposing)
             {
                 foreach (var socket in _sockets)
                     socket.Dispose();
@@ -147,7 +149,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
                     // Wait until we have connections
                     _hasConnectionsEvent.WaitOne();
                 }
-                catch (ThreadInterruptedException exception)
+                catch(ThreadInterruptedException exception)
                 {
                     _log.WriteErrorAsync(nameof(ProducingWorker), nameof(AcceptMessages), null, exception).Wait();
                     return;
@@ -168,7 +170,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
                 var result = readArrayRef[index];
 
-                lock (_sync)
+                lock(_sync)
                 {
                     if (readArrayRef != _readArray) // Arrays are different, figure out where our result went
                     {
@@ -208,7 +210,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
         private int GetConnectionCount()
         {
-            lock (_sync)
+            lock(_sync)
             {
                 return _sockets.Count;
             }
@@ -220,7 +222,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// <param name="clientSocket">The <see cref="INetworkStreamWrapper"/> to dispose</param>
         private void HandleDisconnect(INetworkStreamWrapper clientSocket)
         {
-            lock (_sync)
+            lock(_sync)
             {
                 var index = _sockets.IndexOf(clientSocket);
 
@@ -279,7 +281,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
             result = default(T);
             return false;
-        }
+        } 
 
         private bool TryAuthenticate(INetworkStreamWrapper connection, IMessageInfo messageInfo)
         {
@@ -294,7 +296,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
                 return false;
             }
 
-            if (string.IsNullOrEmpty(pingRequest.Message))
+            if(string.IsNullOrEmpty(pingRequest.Message))
             {
                 _log.WriteWarning(nameof(ProducingWorker), nameof(TryAuthenticate),
                     $"Connection sent empty {nameof(PingRequest)}, dropping connection!");
@@ -317,7 +319,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
                 return false;
             }
 
-            if (_algoClientInstanceRepository
+            if(_algoClientInstanceRepository
                 .GetAlgoInstanceDataByClientIdAsync(splitString[0], splitString[1])
                 .Result
                 .AlgoInstanceStatus != AlgoInstanceStatus.Started)

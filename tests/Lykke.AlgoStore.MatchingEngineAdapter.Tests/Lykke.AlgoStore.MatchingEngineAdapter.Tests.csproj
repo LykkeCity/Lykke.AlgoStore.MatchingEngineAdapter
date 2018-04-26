@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.AlgoStore.CSharp.AlgoTemplate.Models" Version="1.0.37-beta" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.2" />
     <PackageReference Include="Moq" Version="4.8.2" />
     <PackageReference Include="NUnit" Version="3.10.1" />
@@ -14,7 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Lykke.AlgoStore.MatchingEngineAdapter.Services\Lykke.AlgoStore.MatchingEngineAdapter.Services.csproj" />
   </ItemGroup>
 

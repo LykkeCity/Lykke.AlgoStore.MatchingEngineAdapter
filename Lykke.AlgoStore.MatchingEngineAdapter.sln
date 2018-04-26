@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.AlgoStore.MatchingEng
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.AlgoStore.MatchingEngineAdapter.Services", "src\Lykke.AlgoStore.MatchingEngineAdapter.Services\Lykke.AlgoStore.MatchingEngineAdapter.Services.csproj", "{2D5F52EC-2A27-4045-81ED-72355E2A6325}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lykke.AlgoStore.MatchingEngineAdapter.Abstractions", "src\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.csproj", "{CBFACD13-61A4-4EE1-8EA9-CC077CFAD195}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lykke.AlgoStore.MatchingEngineAdapter.Abstractions", "src\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.csproj", "{DF6B0451-9AE0-4F88-84C6-D72D6D03B209}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3. Client", "3. Client", "{C9A2CFDE-EA32-4946-B679-7CE6EFA816B8}"
 EndProject
@@ -48,10 +48,10 @@ Global
 		{A61FFDEE-5725-4650-A788-6E55EE5EFD5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A61FFDEE-5725-4650-A788-6E55EE5EFD5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A61FFDEE-5725-4650-A788-6E55EE5EFD5B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CBFACD13-61A4-4EE1-8EA9-CC077CFAD195}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CBFACD13-61A4-4EE1-8EA9-CC077CFAD195}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CBFACD13-61A4-4EE1-8EA9-CC077CFAD195}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CBFACD13-61A4-4EE1-8EA9-CC077CFAD195}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF6B0451-9AE0-4F88-84C6-D72D6D03B209}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF6B0451-9AE0-4F88-84C6-D72D6D03B209}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF6B0451-9AE0-4F88-84C6-D72D6D03B209}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF6B0451-9AE0-4F88-84C6-D72D6D03B209}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -61,7 +61,7 @@ Global
 		{2D5F52EC-2A27-4045-81ED-72355E2A6325} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
 		{3C300C31-97D3-41E8-A627-C53491BDA28B} = {C9A2CFDE-EA32-4946-B679-7CE6EFA816B8}
 		{A61FFDEE-5725-4650-A788-6E55EE5EFD5B} = {8F9036B1-5106-4C69-B2D2-B78EE52687A0}
-		{CBFACD13-61A4-4EE1-8EA9-CC077CFAD195} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
+		{DF6B0451-9AE0-4F88-84C6-D72D6D03B209} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {69AB9710-C80F-498A-A1E0-6283830A0FEB}

@@ -1,11 +1,13 @@
-﻿using Common.Log;
-using JetBrains.Annotations;
+﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Common.Log;
+using JetBrains.Annotations;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
     /// <summary>
     /// Manages a set of <see cref="ConsumingWorker"/> by adding or removing instances based on the

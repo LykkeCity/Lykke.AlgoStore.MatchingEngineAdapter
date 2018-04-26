@@ -2,7 +2,7 @@
 using JetBrains.Annotations;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
-using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.MatchingEngine.Connector.Abstractions.Models;
 using Lykke.MatchingEngine.Connector.Abstractions.Services;
 using Lykke.Service.Assets.Client;
@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using FeeType = Lykke.Service.FeeCalculator.AutorestClient.Models.FeeType;
 using OrderAction = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.OrderAction;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
 {
     public class MatchingEngineAdapter : IMatchingEngineAdapter
     {
@@ -87,7 +87,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions
             if (response.Status == MeStatusCodes.Ok)
             {
                 SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, response.Price, instanceId);
-                return ResponseModel<double>.CreateOk(response.Price);             
+                return ResponseModel<double>.CreateOk(response.Price);
             }
             return ConvertToApiModel<double>(response.Status);
         }

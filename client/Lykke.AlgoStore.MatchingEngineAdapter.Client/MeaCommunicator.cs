@@ -1,9 +1,9 @@
 ﻿using Common.Log;
-using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 {
@@ -64,7 +64,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         {
             var cancellationToken = (CancellationToken)cancellationTokenObj;
 
-            while(!cancellationToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -72,7 +72,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
                     var message = _networkStreamWrapper.ReadMessage();
                     OnMessageReceived?.Invoke(message);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     _log.WriteError(nameof(MeaCommunicator), nameof(AcceptMessages), e);
                     Console.WriteLine(e);

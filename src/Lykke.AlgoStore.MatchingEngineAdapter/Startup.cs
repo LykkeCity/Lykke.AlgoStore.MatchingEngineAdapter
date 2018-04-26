@@ -13,14 +13,13 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services;
+using AutoMapper;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Mapper;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using AutoMapper;
-using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Mapper;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter
 {
@@ -70,9 +69,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
                 ApplicationContainer = builder.Build();
 
                 Mapper.Initialize(cfg =>
-                {
-                    cfg.AddProfiles(typeof(AutoMapperModelProfile));
-                });
+                                   {
+                                       cfg.AddProfiles(typeof(AutoMapperModelProfile));
+                                   });
 
                 Mapper.AssertConfigurationIsValid();
 
@@ -95,7 +94,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
                 }
 
                 app.UseLykkeForwardedHeaders();
-                app.UseLykkeMiddleware("LykkeService", ex => new {Message = "Technical problem"});
+                app.UseLykkeMiddleware("LykkeService", ex => new { Message = "Technical problem" });
 
                 app.UseMvc();
                 app.UseSwagger(c =>

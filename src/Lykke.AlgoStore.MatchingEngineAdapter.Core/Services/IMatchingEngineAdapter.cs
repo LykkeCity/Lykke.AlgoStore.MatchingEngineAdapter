@@ -1,7 +1,7 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
 
-namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services
+namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Services
 {
     public interface IMatchingEngineAdapter
     {
