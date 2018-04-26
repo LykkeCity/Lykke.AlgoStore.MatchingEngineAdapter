@@ -1,14 +1,24 @@
 ﻿using Common.Log;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 {
     internal class MeaCommunicator : IMeaCommunicator
     {
+        private static readonly Dictionary<byte, Type> _defaultMessageTypeMap = new Dictionary<byte, Type>
+        {
+            [(byte)MeaResponseType.Pong] = typeof(PingRequest),
+            [(byte)MeaResponseType.MarketOrderResponse] = typeof(ResponseModel<double>)
+        };
+
         private readonly TcpClient _tcpClient = new TcpClient();
         private readonly IPAddress _ipAddress;
         private readonly ushort _port;
@@ -55,7 +65,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
             _tcpClient.Connect(_ipAddress, _port);
             var networkStream = _tcpClient.GetStream();
-            _networkStreamWrapper = new NetworkStreamWrapper(networkStream, _log);
+            _networkStreamWrapper = new NetworkStreamWrapper(networkStream, _log, false, _defaultMessageTypeMap);
 
             OnConnectionEstablished?.Invoke();
         }
