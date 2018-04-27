@@ -4,16 +4,15 @@ using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     /// <summary>
-    /// Wraps a <see cref="Socket"/> and provides functionality to read and send messages
+    /// Wraps a <see cref="Stream"/> and provides functionality to read and send messages
     /// </summary>
-    public class NetworkStreamWrapper : INetworkStreamWrapper
+    public class StreamWrapper : IStreamWrapper
     {
         private static readonly Dictionary<byte, Type> _defaultMessageTypeMap = new Dictionary<byte, Type>
         {
@@ -21,7 +20,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             [(byte)MeaRequestType.MarketOrderRequest] = typeof(MarketOrderRequest)
         };
 
-        private readonly NetworkStream _networkStream;
+        private readonly Stream _stream;
         private readonly Dictionary<byte, Type> _messageTypeMap;
         private readonly ILog _log;
         private readonly Timer _authenticationTimer;
@@ -37,46 +36,46 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         public bool IsAuthenticated => _isAuthenticated;
 
         /// <summary>
-        /// Initializes a <see cref="NetworkStreamWrapper"/> using a given <see cref="NetworkStream"/>
+        /// Initializes a <see cref="StreamWrapper"/> using a given <see cref="Stream"/>
         /// </summary>
-        /// <param name="networkStream">The <see cref="NetworkStream"/> to wrap</param>
+        /// <param name="stream">The <see cref="Stream"/> to wrap</param>
         /// /// <param name="log">The logger to use</param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="networkStream"/> or <paramref name="log"/> is null
+        /// Thrown when <paramref name="stream"/> or <paramref name="log"/> is null
         /// </exception>
-        public NetworkStreamWrapper(NetworkStream networkStream, ILog log) 
-            : this(networkStream, log, false)
+        public StreamWrapper(Stream stream, ILog log) 
+            : this(stream, log, false)
         {
         }
 
         /// <summary>
-        /// Initializes a <see cref="NetworkStreamWrapper"/> using a given <see cref="NetworkStream"/>
+        /// Initializes a <see cref="StreamWrapper"/> using a given <see cref="Stream"/>
         /// </summary>
-        /// <param name="networkStream">The <see cref="NetworkStream"/> to wrap</param>
+        /// <param name="stream">The <see cref="Stream"/> to wrap</param>
         /// <param name="log">The logger to use</param>
         /// <param name="useAuthentication">Whether the connection is required to be authenticated or not</param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="networkStream"/> or <paramref name="log"/> is null
+        /// Thrown when <paramref name="stream"/> or <paramref name="log"/> is null
         /// </exception>
-        public NetworkStreamWrapper(NetworkStream networkStream, ILog log, bool useAuthentication)
-            : this(networkStream, log, useAuthentication, _defaultMessageTypeMap)
+        public StreamWrapper(Stream stream, ILog log, bool useAuthentication)
+            : this(stream, log, useAuthentication, _defaultMessageTypeMap)
         {
         }
 
         /// <summary>
-        /// Initializes a <see cref="NetworkStreamWrapper"/> using a given <see cref="NetworkStream"/> and type map
+        /// Initializes a <see cref="StreamWrapper"/> using a given <see cref="Stream"/> and type map
         /// </summary>
-        /// <param name="networkStream">The <see cref="NetworkStream"/> to wrap</param>
+        /// <param name="stream">The <see cref="Stream"/> to wrap</param>
         /// <param name="log">The logger to use</param>
         /// <param name="useAuthentication">Whether the connection is required to be authenticated or not</param>
         /// <param name="messageTypeMap">The type map to use when deserializing messages</param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="networkStream"/> or <paramref name="log"/> is null
+        /// Thrown when <paramref name="stream"/> or <paramref name="log"/> is null
         /// </exception>
-        public NetworkStreamWrapper(NetworkStream networkStream, ILog log, bool useAuthentication, 
+        public StreamWrapper(Stream stream, ILog log, bool useAuthentication, 
             Dictionary<byte, Type> messageTypeMap)
         {
-            _networkStream = networkStream ?? throw new ArgumentNullException(nameof(networkStream));
+            _stream = stream ?? throw new ArgumentNullException(nameof(stream));
             _log = log ?? throw new ArgumentNullException(nameof(_log));
             _messageTypeMap = messageTypeMap ?? _defaultMessageTypeMap;
 
@@ -90,13 +89,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// <param name="callback">The callback to signal once the read is complete</param>
         /// <param name="state">User-defined state</param>
         /// <returns>A <see cref="IAsyncResult"/> containing information about the async operation</returns>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="NetworkStreamWrapper"/> is disposed</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="StreamWrapper"/> is disposed</exception>
         public IAsyncResult BeginReadMessage(AsyncCallback callback, object state)
         {
             CheckDisposed();
 
             var buffer = new byte[1];
-            var asyncResult = _networkStream.BeginRead(buffer, 0, buffer.Length, callback, state);
+            var asyncResult = _stream.BeginRead(buffer, 0, buffer.Length, callback, state);
 
             return new AsyncResultWrapper(asyncResult)
             {
@@ -113,7 +112,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// </param>
         /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
         /// <exception cref="ArgumentException">Thrown when an invalid <paramref name="asyncResult"/> is given</exception>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="NetworkStreamWrapper"/> is disposed</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="StreamWrapper"/> is disposed</exception>
         public IMessageInfo EndReadMessage(IAsyncResult asyncResult)
         {
             CheckDisposed();
@@ -123,7 +122,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             if (wrapper == null)
                 throw new ArgumentException($"{nameof(asyncResult)} is not of type {nameof(AsyncResultWrapper)}");
 
-            _networkStream.EndRead(wrapper.InnerAsyncResult);
+            _stream.EndRead(wrapper.InnerAsyncResult);
             var messageType = wrapper.Buffer[0];
 
             return ParseMessage(messageType);
@@ -134,13 +133,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// and <see cref="EndReadMessage(IAsyncResult)"/> methods. This method will block until a message is available.
         /// </summary>
         /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="NetworkStreamWrapper"/> is disposed</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="StreamWrapper"/> is disposed</exception>
         public IMessageInfo ReadMessage()
         {
             CheckDisposed();
 
             var buffer = new byte[1];
-            _networkStream.Read(buffer, 0, buffer.Length);
+            _stream.Read(buffer, 0, buffer.Length);
 
             return ParseMessage(buffer[0]);
         }
@@ -152,7 +151,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// <param name="messageId">The ID of the request this message is a reply to</param>
         /// <param name="messageType">The message type</param>
         /// <param name="message">The message to send</param>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="NetworkStreamWrapper"/> is disposed</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="StreamWrapper"/> is disposed</exception>
         public void WriteMessage<T>(uint messageId, byte messageType, T message)
         {
             CheckDisposed();
@@ -165,7 +164,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
                 lock (_sync)
                 {
-                    using (var bw = new BinaryWriter(_networkStream, Encoding.UTF8, true))
+                    using (var bw = new BinaryWriter(_stream, Encoding.UTF8, true))
                     {
                         bw.Write(messageType);
                         bw.Write(messageId);
@@ -196,8 +195,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
             if(isDisposing)
             {
-                _networkStream.Close();
-                _networkStream.Dispose();
+                _stream.Close();
+                _stream.Dispose();
             }
 
             _isDisposed = true;
@@ -216,7 +215,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
             var result = new MessageInfo(this);
 
-            using (var br = new BinaryReader(_networkStream, Encoding.UTF8, true))
+            using (var br = new BinaryReader(_stream, Encoding.UTF8, true))
             {
                 lock (_sync)
                 {
@@ -241,7 +240,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
             if (_isAuthenticated) return;
 
-            _log.WriteWarning(nameof(NetworkStreamWrapper), nameof(EnsureAuthenticated),
+            _log.WriteWarning(nameof(StreamWrapper), nameof(EnsureAuthenticated),
                 "Client failed to authenticate within the time limit, disposing connection!");
             Dispose();
         }
@@ -249,7 +248,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         private void CheckDisposed()
         {
             if (_isDisposed)
-                throw new ObjectDisposedException(nameof(NetworkStreamWrapper), "The stream wrapper has been disposed");
+                throw new ObjectDisposedException(nameof(StreamWrapper), "The stream wrapper has been disposed");
         }
     }
 }

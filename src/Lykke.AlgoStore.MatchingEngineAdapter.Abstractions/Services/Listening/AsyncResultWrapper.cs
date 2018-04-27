@@ -5,7 +5,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     /// <summary>
     /// Used to wrap an async result to add some extra fields.
-    /// This class has no use outside of the context of <see cref="NetworkStreamWrapper"/>
+    /// This class has no use outside of the context of <see cref="StreamWrapper"/>
     /// </summary>
     internal class AsyncResultWrapper : IAsyncResult
     {
