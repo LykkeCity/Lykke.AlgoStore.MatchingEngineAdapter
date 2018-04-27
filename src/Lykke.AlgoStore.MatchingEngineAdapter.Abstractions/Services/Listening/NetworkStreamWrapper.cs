@@ -15,14 +15,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
     /// </summary>
     public class NetworkStreamWrapper : INetworkStreamWrapper
     {
-        private static readonly Dictionary<MeaRequestType, Type> _defaultMessageTypeMap = new Dictionary<MeaRequestType, Type>
+        private static readonly Dictionary<byte, Type> _defaultMessageTypeMap = new Dictionary<byte, Type>
         {
-            [MeaRequestType.Ping] = typeof(PingRequest),
-            [MeaRequestType.MarketOrderRequest] = typeof(MarketOrderRequest)
+            [(byte)MeaRequestType.Ping] = typeof(PingRequest),
+            [(byte)MeaRequestType.MarketOrderRequest] = typeof(MarketOrderRequest)
         };
 
         private readonly NetworkStream _networkStream;
-        private readonly Dictionary<MeaRequestType, Type> _messageTypeMap;
+        private readonly Dictionary<byte, Type> _messageTypeMap;
         private readonly ILog _log;
         private readonly Timer _authenticationTimer;
 
@@ -74,7 +74,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// Thrown when <paramref name="networkStream"/> or <paramref name="log"/> is null
         /// </exception>
         public NetworkStreamWrapper(NetworkStream networkStream, ILog log, bool useAuthentication, 
-            Dictionary<MeaRequestType, Type> messageTypeMap)
+            Dictionary<byte, Type> messageTypeMap)
         {
             _networkStream = networkStream ?? throw new ArgumentNullException(nameof(networkStream));
             _log = log ?? throw new ArgumentNullException(nameof(_log));
@@ -211,7 +211,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// <exception cref="InvalidDataException">Thrown when the message type is invalid</exception>
         private MessageInfo ParseMessage(byte messageType)
         {
-            if (!_messageTypeMap.ContainsKey((MeaRequestType)messageType))
+            if (!_messageTypeMap.ContainsKey(messageType))
                 throw new InvalidDataException($"Message type {messageType} has no handler");
 
             var result = new MessageInfo(this);
@@ -223,7 +223,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
                     result.Id = br.ReadUInt32();
                     var dataLength = br.ReadUInt16();
 
-                    var type = _messageTypeMap[(MeaRequestType)messageType];
+                    var type = _messageTypeMap[messageType];
 
                     using (var ms = new MemoryStream(br.ReadBytes(dataLength)))
                     {
