@@ -4,6 +4,7 @@ using ProtoBuf;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
 {
+    [ProtoContract]
     public class ResponseModel
     {
         protected static readonly Dictionary<ErrorCodeType, string> StatusCodesMap = new Dictionary<ErrorCodeType, string>
@@ -20,6 +21,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
             {ErrorCodeType.LeadToNegativeSpread, ErrorMessages.LeadToNegativeSpread},
             {ErrorCodeType.Runtime, ErrorMessages.RuntimeError},
         };
+
+        [ProtoMember (0, IsRequired = false)]
         public ErrorModel Error { get; set; }
 
         public enum ErrorCodeType
@@ -38,16 +41,22 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
             Runtime = 500
         }
 
+        [ProtoContract]
         public class ErrorModel
         {
+            [ProtoMember(0, IsRequired = true)]
             public ErrorCodeType Code { get; set; }
+
             /// <summary>
             /// In case ErrorCoderType = 0
             /// </summary>
+            [ProtoMember(1, IsRequired = false)]           
             public string Field { get; set; }
+
             /// <summary>
             /// Localized Error message
             /// </summary>
+            [ProtoMember(2, IsRequired = true)]
             public string Message { get; set; }
         }
 
@@ -92,7 +101,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
     [ProtoContract]
     public class ResponseModel<T> : ResponseModel
     {
-        [ProtoMember(1, IsRequired = true)]
+        [ProtoMember(1, IsRequired = false)]
         public T Result { get; set; }
 
         public static ResponseModel<T> CreateOk(T result)
