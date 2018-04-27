@@ -7,6 +7,7 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Respon
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -19,6 +20,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     /// </summary>
     public class ProducingWorker : IDisposable
     {
+        // This will hold all of the connected instances.
+        // We use Dictionary here because there's no concurrent hashset in .NET. The value is not used
+        // and will be set to 0 for every connection
+        private readonly ConcurrentDictionary<string, byte> _connectionHashSet = new ConcurrentDictionary<string, byte>();
+
         private readonly List<INetworkStreamWrapper> _sockets = new List<INetworkStreamWrapper>();
         private readonly IMessageQueue _requestQueue;
         private readonly IAlgoClientInstanceRepository _algoClientInstanceRepository;
@@ -43,6 +49,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="requestQueue">The <see cref="IMessageQueue"/> to use for queueing incoming requests for processing</param>
         /// <param name="algoClientInstanceRepository">The <see cref="IAlgoClientInstanceRepository"/> to use for validating connections</param>
+        /// <param name="connectionHashSet">The hashset which will hold all active connection IDs</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="requestQueue"/>, <paramref name="algoClientInstanceRepository"/>
         /// or <paramref name="log"/> are null
@@ -50,10 +57,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         public ProducingWorker(
             IMessageQueue requestQueue, 
             IAlgoClientInstanceRepository algoClientInstanceRepository, 
+            ConcurrentDictionary<string, byte> connectionHashSet,
             [NotNull] ILog log)
         {
             _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
             _algoClientInstanceRepository = algoClientInstanceRepository ?? throw new ArgumentNullException(nameof(algoClientInstanceRepository));
+            _connectionHashSet = connectionHashSet ?? throw new ArgumentNullException(nameof(connectionHashSet));
             _log = log ?? throw new ArgumentNullException(nameof(log));
 
             _worker = new Thread(AcceptMessages);
@@ -165,8 +174,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     waitHandleArrayRef = _waitHandleArray;
                 }
 
-                // Wait until there's a message on any of the connections
-                var index = WaitHandle.WaitAny(waitHandleArrayRef);
+                // Wait until there's a message on any of the connections.
+                // ---
+                // The timeout here is to take into account any new connections - if a new connection
+                // is added to this worker and none of the initial ones receive any message
+                // the new connection will never have its messages read.
+                var index = WaitHandle.WaitAny(waitHandleArrayRef, 2_500);
+
+                // No message received - continue to next iteration
+                if (index == WaitHandle.WaitTimeout)
+                    continue;
 
                 var result = readArrayRef[index];
 
@@ -230,6 +247,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     return;
 
                 _sockets.RemoveAt(index);
+
+                if (clientSocket.ID != null)
+                    _connectionHashSet.TryRemove(clientSocket.ID, out byte ignore);
 
                 clientSocket.Dispose();
 
@@ -329,7 +349,19 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 return false;
             }
 
+            // TryAdd is used here in place of ContainsKey, because ContainsKey introduces a security issue.
+            // For example, if two new connections are sent to two workers at the same time and try authenticating with the same token,
+            // both of them can pass through the ContainsKey check before either is added to the dictionary and complete authentication.
+            if(!_connectionHashSet.TryAdd(pingRequest.Message, 0))
+            {
+                _log.WriteWarning(nameof(ProducingWorker), nameof(TryAuthenticate),
+                    $"Connection sent token of an already existing connection, dropping new connection!");
+                return false;
+            }
+
             connection.MarkAuthenticated();
+            connection.ID = pingRequest.Message;
+
             messageInfo.Reply((byte)MeaResponseType.Pong, new PingRequest { Message = "Success" });
             return true;
         }
