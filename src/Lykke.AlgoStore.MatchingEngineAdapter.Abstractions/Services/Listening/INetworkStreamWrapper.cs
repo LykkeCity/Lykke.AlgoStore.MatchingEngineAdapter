@@ -13,6 +13,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         bool AuthenticationEnabled { get; }
         bool IsAuthenticated { get; }
 
+        string ID { get; set; }
+
         void WriteMessage<T>(uint messageId, byte messageType, T message);
     }
 }
