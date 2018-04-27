@@ -31,6 +31,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         private bool _isDisposed;
         private bool _isAuthenticated;
 
+        public string ID { get; set; }
+
         public bool AuthenticationEnabled => _authenticationTimer != null;
         public bool IsAuthenticated => _isAuthenticated;
 
