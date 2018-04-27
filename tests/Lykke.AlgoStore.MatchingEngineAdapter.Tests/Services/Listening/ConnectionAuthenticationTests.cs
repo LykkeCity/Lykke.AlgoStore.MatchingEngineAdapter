@@ -10,6 +10,7 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
 using Moq;
 using NUnit.Framework;
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests.MarketOrderRequest;
 
@@ -57,21 +58,61 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         }
 
         [Test]
+        public void ProducingWorker_ClosesConnection_WhenDuplicateConnection()
+        {
+            var request = new PingRequest { Message = $"{STARTED_GUID_PLACEHOLDER}_{STARTED_GUID_PLACEHOLDER}" };
+
+            var log = Given_Correct_Log();
+            var connectionSet = new ConcurrentDictionary<string, byte>();
+
+            var asyncResultMock = Given_Verifiable_AsyncResultMock();
+            var messageInfoMock = Given_Verifiable_MessageInfoMock(request, false);
+            var listenerNetworkStreamMock =
+                Given_Verifiable_ListenerNetworkStreamWrapperMock(asyncResultMock.Object, messageInfoMock.Object, false);
+
+            var secondAsyncResultMock = Given_Verifiable_AsyncResultMock();
+            var failingMessageInfoMock = Given_Verifiable_MessageInfoMock(request, true);
+            var secondListenerNetworkStreamMock =
+                Given_Verifiable_ListenerNetworkStreamWrapperMock(secondAsyncResultMock.Object,
+                                                                  failingMessageInfoMock.Object, true);
+
+            var producingWorker = Given_Correct_ProducingWorker(connectionSet, log);
+
+            producingWorker.AddConnection(listenerNetworkStreamMock.Object);
+
+            Thread.Sleep(3000);
+
+            producingWorker.AddConnection(secondListenerNetworkStreamMock.Object);
+
+            Thread.Sleep(3000);
+
+            listenerNetworkStreamMock.Verify();
+            secondListenerNetworkStreamMock.Verify();
+
+            messageInfoMock.Verify();
+            failingMessageInfoMock.Verify();
+
+            asyncResultMock.Verify();
+            secondAsyncResultMock.Verify();
+        }
+
+        [Test]
         public void ProducingWorker_KeepsConnection_WhenAuthenticationCorrect()
         { 
             var log = Given_Correct_Log();
 
+            var connectionSet = new ConcurrentDictionary<string, byte>();
             var request = new PingRequest { Message = $"{STARTED_GUID_PLACEHOLDER}_{STARTED_GUID_PLACEHOLDER}" };
             var asyncResultMock = Given_Verifiable_AsyncResultMock();
             var messageInfoMock = Given_Verifiable_MessageInfoMock(request, false);
             var listenerNetworkStreamMock =
                 Given_Verifiable_ListenerNetworkStreamWrapperMock(asyncResultMock.Object, messageInfoMock.Object, false);
 
-            var producingWorker = Given_Correct_ProducingWorker(log);
+            var producingWorker = Given_Correct_ProducingWorker(connectionSet, log);
 
             producingWorker.AddConnection(listenerNetworkStreamMock.Object);
 
-            Thread.Sleep(100);
+            Thread.Sleep(250);
 
             listenerNetworkStreamMock.Verify();
             messageInfoMock.Verify();
@@ -82,16 +123,17 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         {
             var log = Given_Correct_Log();
 
+            var connectionSet = new ConcurrentDictionary<string, byte>();
             var asyncResultMock = Given_Verifiable_AsyncResultMock();
             var messageInfoMock = Given_Verifiable_MessageInfoMock(request, true);
             var listenerNetworkStreamMock = 
                 Given_Verifiable_ListenerNetworkStreamWrapperMock(asyncResultMock.Object, messageInfoMock.Object, true);
 
-            var producingWorker = Given_Correct_ProducingWorker(log);
+            var producingWorker = Given_Correct_ProducingWorker(connectionSet, log);
 
             producingWorker.AddConnection(listenerNetworkStreamMock.Object);
 
-            Thread.Sleep(100);
+            Thread.Sleep(250);
 
             listenerNetworkStreamMock.Verify();
             messageInfoMock.Verify();
@@ -106,9 +148,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 
         private Mock<IAsyncResult> Given_Verifiable_AsyncResultMock()
         {
+            var autoReset = new AutoResetEvent(true);
+
             var asyncResultMock = new Mock<IAsyncResult>(MockBehavior.Strict);
             asyncResultMock.SetupGet(a => a.AsyncWaitHandle)
-                           .Returns(new ManualResetEvent(true))
+                           .Returns(autoReset)
                            .Verifiable();
 
             return asyncResultMock;
@@ -136,18 +180,25 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         }
 
         private Mock<INetworkStreamWrapper> Given_Verifiable_ListenerNetworkStreamWrapperMock(
-            IAsyncResult asyncResult, 
+            IAsyncResult asyncResult,
             IMessageInfo messageInfo,
             bool shouldFail)
         {
             var listenerNetworkStreamMock = new Mock<INetworkStreamWrapper>(MockBehavior.Strict);
             var isAuthenticated = false;
+            var id = "";
 
             if (shouldFail)
             {
                 listenerNetworkStreamMock.Setup(l => l.Dispose())
                                          .Verifiable();
             }
+
+            listenerNetworkStreamMock.Setup(l => l.ID)
+                                     .Returns(() => id);
+
+            listenerNetworkStreamMock.SetupSet(l => l.ID = It.IsAny<string>())
+                                     .Callback((string val) => id = val);
 
             listenerNetworkStreamMock.Setup(l => l.BeginReadMessage(It.IsAny<AsyncCallback>(), It.IsAny<object>()))
                                      .Returns(asyncResult)
@@ -165,7 +216,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             }
 
             listenerNetworkStreamMock.SetupGet(l => l.IsAuthenticated)
-                                     .Returns(isAuthenticated)
+                                     .Returns(() => isAuthenticated)
                                      .Verifiable();
 
             listenerNetworkStreamMock.SetupGet(l => l.AuthenticationEnabled)
@@ -208,7 +259,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             return algoClientInstanceRepoMock.Object;
         }
 
-        private ProducingWorker Given_Correct_ProducingWorker(ILog log)
+        private ProducingWorker Given_Correct_ProducingWorker(ConcurrentDictionary<string, byte> connectionSet, ILog log)
         {
             var messageQueueMock = new Mock<IMessageQueue>();
             var algoClientInstanceRepo = Given_Correct_AlgoClientInstanceRepository();
@@ -216,7 +267,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             messageQueueMock.Setup(m => m.Enqueue(It.IsAny<IMessageInfo>()))
                             .Callback<IMessageInfo>((request) => request.Reply(MeaResponseType.Pong, request.Message));
 
-            return new ProducingWorker(messageQueueMock.Object, algoClientInstanceRepo, log);
+            return new ProducingWorker(messageQueueMock.Object, algoClientInstanceRepo, connectionSet, log);
         }
     }
 }

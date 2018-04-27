@@ -5,6 +5,7 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
+using System.Collections.Concurrent;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -19,6 +20,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         private const int MAX_CONNECTIONS_PER_WORKER = 100;
 
+        private readonly ConcurrentDictionary<string, byte> _activeConnections = new ConcurrentDictionary<string, byte>();
         private readonly List<ProducingWorker> _workers = new List<ProducingWorker>();
         private readonly IMessageQueue _requestQueue;
         private readonly IAlgoClientInstanceRepository _algoClientInstanceRepository;
@@ -80,7 +82,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             if (minConnections == MAX_CONNECTIONS_PER_WORKER)
             {
                 // All workers are on max load, spin up a new one
-                var newWorker = new ProducingWorker(_requestQueue, _algoClientInstanceRepository, _log);
+                var newWorker = new ProducingWorker(_requestQueue, _algoClientInstanceRepository, _activeConnections, _log);
                 newWorker.AddConnection(connection);
 
                 _workers.Add(newWorker);
