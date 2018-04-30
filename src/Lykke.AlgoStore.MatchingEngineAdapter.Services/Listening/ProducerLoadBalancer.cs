@@ -51,7 +51,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="connection">The connection to accept</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> is null</exception>
-        public void AcceptConnection(INetworkStreamWrapper connection)
+        public void AcceptConnection(IStreamWrapper connection)
         {
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));

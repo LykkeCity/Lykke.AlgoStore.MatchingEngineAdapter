@@ -179,12 +179,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             return messageInfoMock;
         }
 
-        private Mock<INetworkStreamWrapper> Given_Verifiable_ListenerNetworkStreamWrapperMock(
+        private Mock<IStreamWrapper> Given_Verifiable_ListenerNetworkStreamWrapperMock(
             IAsyncResult asyncResult,
             IMessageInfo messageInfo,
             bool shouldFail)
         {
-            var listenerNetworkStreamMock = new Mock<INetworkStreamWrapper>(MockBehavior.Strict);
+            var listenerNetworkStreamMock = new Mock<IStreamWrapper>(MockBehavior.Strict);
             var isAuthenticated = false;
             var id = "";
 
