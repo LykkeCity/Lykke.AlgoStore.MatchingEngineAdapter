@@ -15,7 +15,7 @@ using System.Threading;
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
     /// <summary>
-    /// Listens for incoming requests on a set of <see cref="INetworkStreamWrapper"/> and
+    /// Listens for incoming requests on a set of <see cref="IStreamWrapper"/> and
     /// handles events like network failures and invalid requests
     /// </summary>
     public class ProducingWorker : IDisposable
@@ -25,7 +25,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         // and will be set to 0 for every connection
         private readonly ConcurrentDictionary<string, byte> _connectionHashSet = new ConcurrentDictionary<string, byte>();
 
-        private readonly List<INetworkStreamWrapper> _sockets = new List<INetworkStreamWrapper>();
+        private readonly List<IStreamWrapper> _sockets = new List<IStreamWrapper>();
         private readonly IMessageQueue _requestQueue;
         private readonly IAlgoClientInstanceRepository _algoClientInstanceRepository;
         private readonly Thread _worker;
@@ -73,10 +73,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <summary>
         /// Adds a new connection to handle
         /// </summary>
-        /// <param name="connection">The <see cref="INetworkStreamWrapper"/> to handle</param>
+        /// <param name="connection">The <see cref="IStreamWrapper"/> to handle</param>
         /// <exception cref="ObjectDisposedException">Thrown when the <see cref="ProducingWorker"/> has been disposed</exception>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="connection"/> is null</exception>
-        public void AddConnection(INetworkStreamWrapper connection)
+        public void AddConnection(IStreamWrapper connection)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException("The worker has been disposed");
@@ -234,10 +234,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         }
 
         /// <summary>
-        /// Handles the process of disconnecting and disposing a <see cref="INetworkStreamWrapper"/>
+        /// Handles the process of disconnecting and disposing a <see cref="IStreamWrapper"/>
         /// </summary>
-        /// <param name="clientSocket">The <see cref="INetworkStreamWrapper"/> to dispose</param>
-        private void HandleDisconnect(INetworkStreamWrapper clientSocket)
+        /// <param name="clientSocket">The <see cref="IStreamWrapper"/> to dispose</param>
+        private void HandleDisconnect(IStreamWrapper clientSocket)
         {
             lock(_sync)
             {
@@ -279,9 +279,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <typeparam name="T">The type the delegate will return</typeparam>
         /// <param name="codeToRun">The delegate to run and check for failures</param>
         /// <param name="result">The result to set to the return value of the delegate</param>
-        /// <param name="connection">The <see cref="INetworkStreamWrapper"/> to dispose in the case of failures</param>
+        /// <param name="connection">The <see cref="IStreamWrapper"/> to dispose in the case of failures</param>
         /// <returns>true if the delegate ran successfully, false if there was a failure</returns>
-        private bool RunAndCatchDisconnection<T>(Func<T> codeToRun, out T result, INetworkStreamWrapper connection)
+        private bool RunAndCatchDisconnection<T>(Func<T> codeToRun, out T result, IStreamWrapper connection)
         {
             try
             {
@@ -303,7 +303,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             return false;
         } 
 
-        private bool TryAuthenticate(INetworkStreamWrapper connection, IMessageInfo messageInfo)
+        private bool TryAuthenticate(IStreamWrapper connection, IMessageInfo messageInfo)
         {
             if (!connection.AuthenticationEnabled || connection.IsAuthenticated) return true;
 

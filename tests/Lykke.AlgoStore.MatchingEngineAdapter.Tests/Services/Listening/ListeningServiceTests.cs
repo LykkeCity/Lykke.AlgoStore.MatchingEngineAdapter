@@ -43,7 +43,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         {
             var producerLoadBalancer = new Mock<IProducerLoadBalancer>(MockBehavior.Strict);
 
-            producerLoadBalancer.Setup(p => p.AcceptConnection(It.IsAny<INetworkStreamWrapper>()))
+            producerLoadBalancer.Setup(p => p.AcceptConnection(It.IsAny<IStreamWrapper>()))
                                 .Verifiable();
 
             producerLoadBalancer.Setup(p => p.Dispose())
