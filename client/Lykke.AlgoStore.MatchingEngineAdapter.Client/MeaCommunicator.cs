@@ -26,7 +26,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
         private Thread _workerThread;
         private CancellationTokenSource _cts;
-        private NetworkStreamWrapper _networkStreamWrapper;
+        private IStreamWrapper _streamWrapper;
 
         public event Action OnConnectionEstablished;
         public event Action<IMessageInfo> OnMessageReceived;
@@ -54,7 +54,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         public void SendRequest<T>(uint messageId, byte messageType, T message)
         {
             EnsureConnected();
-            _networkStreamWrapper.WriteMessage(messageId, messageType, message);
+            _streamWrapper.WriteMessage(messageId, messageType, message);
         }
 
         private void EnsureConnected()
@@ -66,7 +66,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipAddress, _port);
             var networkStream = _tcpClient.GetStream();
-            _networkStreamWrapper = new NetworkStreamWrapper(networkStream, _log, false, _defaultMessageTypeMap);
+            _streamWrapper = new StreamWrapper(networkStream, _log, false, _defaultMessageTypeMap);
 
             OnConnectionEstablished?.Invoke();
         }
@@ -80,7 +80,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
                 try
                 {
                     EnsureConnected();
-                    var message = _networkStreamWrapper.ReadMessage();
+                    var message = _streamWrapper.ReadMessage();
                     OnMessageReceived?.Invoke(message);
                 }
                 catch (Exception e)
