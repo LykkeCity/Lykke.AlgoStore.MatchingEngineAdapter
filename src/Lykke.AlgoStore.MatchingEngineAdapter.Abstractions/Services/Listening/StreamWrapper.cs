@@ -207,7 +207,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// </summary>
         /// <param name="messageType">The type of the message to read</param>
         /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
-        /// <exception cref="InvalidDataException">Thrown when the message type is invalid</exception>
+        /// <exception cref="InvalidDataException">Thrown when the message type or payload is invalid</exception>
         private MessageInfo ParseMessage(byte messageType)
         {
             if (!_messageTypeMap.ContainsKey(messageType))
@@ -226,7 +226,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
                     using (var ms = new MemoryStream(br.ReadBytes(dataLength)))
                     {
-                        result.Message = Serializer.NonGeneric.Deserialize(type, ms);
+                        try
+                        {
+                            result.Message = Serializer.NonGeneric.Deserialize(type, ms);
+                        }
+                        catch(Exception e)
+                        {
+                            // Rethrow wrapped exception here to prevent having to catch specific library exceptions
+                            throw new InvalidDataException("Error deserializing message payload. See inner exception for details",
+                                                           e);
+                        }
                     }
                 }
             }
