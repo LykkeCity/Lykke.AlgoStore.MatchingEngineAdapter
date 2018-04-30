@@ -8,7 +8,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
     /// </summary>
     internal class MessageInfo : IMessageInfo
     {
-        private readonly INetworkStreamWrapper _socket;
+        private readonly IStreamWrapper _socket;
 
         /// <summary>
         /// The request ID
@@ -21,11 +21,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         public object Message { get; set; }
 
         /// <summary>
-        /// Initializes a <see cref="MessageInfo"/> using a given <see cref="INetworkStreamWrapper"/>
+        /// Initializes a <see cref="MessageInfo"/> using a given <see cref="IStreamWrapper"/>
         /// </summary>
-        /// <param name="socket">A <see cref="INetworkStreamWrapper"/> to use for replying with messages</param>
+        /// <param name="socket">A <see cref="IStreamWrapper"/> to use for replying with messages</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="socket"/> is null</exception>
-        public MessageInfo(INetworkStreamWrapper socket)
+        public MessageInfo(IStreamWrapper socket)
         {
             _socket = socket ?? throw new ArgumentNullException(nameof(socket));
         }

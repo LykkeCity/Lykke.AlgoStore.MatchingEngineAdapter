@@ -2,7 +2,7 @@
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
-    public interface INetworkStreamWrapper : IDisposable
+    public interface IStreamWrapper : IDisposable
     {
         IAsyncResult BeginReadMessage(AsyncCallback callback, object state);
         IMessageInfo EndReadMessage(IAsyncResult asyncResult);
