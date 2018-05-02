@@ -290,11 +290,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             }
             catch (System.IO.InvalidDataException e)
             {
-                _log.WriteWarning(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), $"Client sent invalid data, dropping connection: {e}");
+                _log.WriteWarning(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), $"Client sent invalid data, dropping connection!");
             }
             catch (Exception e) when (e is System.IO.IOException || e is ObjectDisposedException)
             {
-                _log.WriteInfo(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), $"Connection to client was lost: {e}");
+                _log.WriteInfo(nameof(ProducingWorker), nameof(RunAndCatchDisconnection), 
+                    e is ObjectDisposedException ? "Connection to client was dropped" : "Connection to client was lost");
             }
 
             HandleDisconnect(connection);
