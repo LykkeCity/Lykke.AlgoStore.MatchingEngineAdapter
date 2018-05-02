@@ -56,8 +56,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));
 
-            _log.WriteInfoAsync(nameof(ProducerLoadBalancer), nameof(AcceptConnection), null, "Accept connection").Wait();
-
             // Find out which worker has the least connections
             var minConnections = MAX_CONNECTIONS_PER_WORKER;
             ProducingWorker leastLoadWorker = null;
