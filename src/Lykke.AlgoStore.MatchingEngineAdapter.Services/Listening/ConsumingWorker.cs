@@ -43,6 +43,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
         public ConsumingWorker(IMessageQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter, [NotNull] ILog log)
         {
+            _log = log ?? throw new ArgumentNullException(nameof(log));
+
             _requestQueue = requestQueue ?? throw new ArgumentNullException();
             _matchingEngineAdapter =
                 matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
@@ -52,8 +54,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
             _thread = new Thread(DoWork) { Priority = ThreadPriority.Highest };
             _thread.Start(_cts.Token);
-
-            _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
         /// <summary>
