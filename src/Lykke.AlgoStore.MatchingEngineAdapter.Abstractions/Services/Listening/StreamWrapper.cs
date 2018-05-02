@@ -94,13 +94,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         {
             CheckDisposed();
 
-            var buffer = new byte[1];
-            var asyncResult = _stream.BeginRead(buffer, 0, buffer.Length, callback, state);
-
-            return new AsyncResultWrapper(asyncResult)
-            {
-                Buffer = buffer
-            };
+            return new ReadMessageOperation(_stream, ParseMessage, callback, state);
         }
 
         /// <summary>
@@ -117,15 +111,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         {
             CheckDisposed();
 
-            var wrapper = asyncResult as AsyncResultWrapper;
+            var operation = asyncResult as ReadMessageOperation;
 
-            if (wrapper == null)
-                throw new ArgumentException($"{nameof(asyncResult)} is not of type {nameof(AsyncResultWrapper)}");
+            if (operation == null)
+                throw new ArgumentException($"{nameof(asyncResult)} is not valid for this operation");
 
-            _stream.EndRead(wrapper.InnerAsyncResult);
-            var messageType = wrapper.Buffer[0];
-
-            return ParseMessage(messageType);
+            return operation.Result;
         }
 
         /// <summary>
@@ -141,7 +132,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             var buffer = new byte[1];
             _stream.Read(buffer, 0, buffer.Length);
 
-            return ParseMessage(buffer[0]);
+            return ParseMessage(buffer[0], _stream);
         }
 
         /// <summary>
@@ -206,16 +197,17 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// Reads a message given a certain message type
         /// </summary>
         /// <param name="messageType">The type of the message to read</param>
+        /// <param name="stream">The stream to read the message from</param>
         /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
         /// <exception cref="InvalidDataException">Thrown when the message type or payload is invalid</exception>
-        private MessageInfo ParseMessage(byte messageType)
+        private MessageInfo ParseMessage(byte messageType, Stream stream)
         {
             if (!_messageTypeMap.ContainsKey(messageType))
                 throw new InvalidDataException($"Message type {messageType} has no handler");
 
             var result = new MessageInfo(this);
 
-            using (var br = new BinaryReader(_stream, Encoding.UTF8, true))
+            using (var br = new BinaryReader(stream, Encoding.UTF8, true))
             {
                 lock (_sync)
                 {
