@@ -110,6 +110,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     try
                     {
                         var socket = _listener.EndAcceptSocket(result);
+
+                        _log.WriteInfoAsync(nameof(ListeningService), nameof(AcceptConnections), null, 
+                            $"New connection from address {socket.RemoteEndPoint}").Wait();
+
                         var networkStream = new NetworkStream(socket, ownsSocket: true);
                         _producerLoadBalancer.AcceptConnection(new StreamWrapper(networkStream, _log, true));
                     }
