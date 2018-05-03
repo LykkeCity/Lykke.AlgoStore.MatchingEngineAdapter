@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.AlgoStore.MatchingEngineAdapter.Abstractions" Version="1.0.14-beta" />
-    <PackageReference Include="Lykke.Common" Version="6.5.0" />
+    <PackageReference Include="Lykke.AlgoStore.MatchingEngineAdapter.Abstractions" Version="1.0.15-beta" />
+    <PackageReference Include="Lykke.Common" Version="6.6.0" />
     <PackageReference Include="protobuf-net" Version="2.3.7" />
   </ItemGroup>
 
