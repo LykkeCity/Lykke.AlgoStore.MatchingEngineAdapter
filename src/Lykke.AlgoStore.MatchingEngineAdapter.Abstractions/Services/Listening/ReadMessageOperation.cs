@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
@@ -61,9 +62,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         {
             try
             {
-                _stream.EndRead(_streamReadAsyncresult);
+                _stream.EndRead(asyncResult);
 
-                var buffer = _streamReadAsyncresult.AsyncState as byte[];
+                var buffer = asyncResult.AsyncState as byte[];
                 _operationResult = _messageParser(buffer[0], _stream);
             }
             catch(Exception e)
@@ -82,8 +83,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             if (!IsCompleted)
                 _waitHandle.WaitOne();
 
-            if (_operationException != null)
-                throw _operationException;
+            if (_operationException != null) // ExceptionDispatchInfo preserves the original stack trace of the exception
+                ExceptionDispatchInfo.Capture(_operationException).Throw();
 
             return _operationResult;
         }
