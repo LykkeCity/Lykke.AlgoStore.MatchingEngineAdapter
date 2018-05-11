@@ -1,12 +1,17 @@
 ﻿using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using Common.Log;
 using JetBrains.Annotations;
+using System.Threading.Tasks;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
+using System.Collections.Concurrent;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
+using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
+using System.Threading;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -15,32 +20,38 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     /// </summary>
     public class ListeningService : IListeningService
     {
-        private readonly IMessageQueue _requestQueue;
+        // This will hold all of the connected instances.
+        // We use Dictionary here because there's no concurrent hashset in .NET. The value is not used
+        // and will be set to 0 for every connection
+        private readonly ConcurrentDictionary<string, byte> _connectionHashSet = new ConcurrentDictionary<string, byte>();
+        private readonly HashSet<Task> _allWorkers = new HashSet<Task>();
+
         private readonly IMatchingEngineAdapter _matchingEngineAdapter;
-        private readonly IProducerLoadBalancer _producerLoadBalancer;
-        private readonly ConsumerLoadBalancer _consumerLoadBalancer;
-        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private readonly ushort _port;
+        private readonly IAlgoClientInstanceRepository _clientInstanceRepository;
+        private readonly IMessageHandler _messageHandler;
         private readonly ILog _log;
+        private readonly ushort _port;
+
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
 
         private TcpListener _listener;
-
-        private Thread _acceptingThread;
 
         private bool _isDisposed;
 
         /// <summary>
         /// Initializes a <see cref="ListeningService"/>
         /// </summary>
-        public ListeningService(IProducerLoadBalancer producerLoadBalancer, IMessageQueue requestQueue, IMatchingEngineAdapter matchingEngineAdapter,
-            ushort port, [NotNull] ILog log)
+        public ListeningService(
+            IMatchingEngineAdapter matchingEngineAdapter,
+            IAlgoClientInstanceRepository clientInstanceRepository,
+            IMessageHandler messageHandler,
+            [NotNull] ILog log,
+            ushort port)
         {
-            _requestQueue = requestQueue ?? throw new ArgumentNullException(nameof(requestQueue));
             _matchingEngineAdapter = matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
+            _clientInstanceRepository = clientInstanceRepository ?? throw new ArgumentNullException(nameof(clientInstanceRepository));
+            _messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
             _log = log ?? throw new ArgumentNullException(nameof(log));
-
-            _producerLoadBalancer = producerLoadBalancer ?? throw new ArgumentNullException(nameof(producerLoadBalancer));
-            _consumerLoadBalancer = new ConsumerLoadBalancer(_requestQueue, _matchingEngineAdapter, _log);
 
             _port = port;
         }
@@ -48,14 +59,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <summary>
         /// Starts listening and starts the connection accepting thread
         /// </summary>
-        public void Start()
+        public async Task Start()
         {
             _listener = new TcpListener(IPAddress.Any, _port);
             _listener.Start();
 
-            _acceptingThread = new Thread(AcceptConnections);
-            _acceptingThread.Priority = ThreadPriority.Highest;
-            _acceptingThread.Start(_cts.Token);
+            await AcceptConnections();
         }
 
         /// <summary>
@@ -82,55 +91,60 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
             if (isDisposing)
             {
-                _cts.Cancel();
-                _acceptingThread.Join();
-
                 _listener.Stop();
-                _producerLoadBalancer.Dispose();
-                _consumerLoadBalancer.Dispose();
+                _listener.Server.Close();
+                _listener.Server.Dispose();
+
+                var allConnections = _allWorkers.ToArray();
+
+                _cts.Cancel();
+
+                var allConnectionsClosedTask = Task.WhenAll(allConnections);
+                allConnectionsClosedTask.Wait();
+
+                _cts.Dispose();
             }
 
             _isDisposed = true;
         }
 
         /// <summary>
-        /// Accepts a new connection until the thread is stopped
+        /// Accepts new connections until the listener is stopped
         /// </summary>
-        /// <param name="cancellationTokenObj">A <see cref="CancellationToken"/></param>
-        private void AcceptConnections(object cancellationTokenObj)
+        private async Task AcceptConnections()
         {
-            var cancellationToken = (CancellationToken)cancellationTokenObj;
-
-            while (!cancellationToken.IsCancellationRequested)
+            while (true)
             {
-                var autoResetEvent = new AutoResetEvent(false);
+                var socket = await _listener.AcceptSocketAsync();
 
-                var callback = (AsyncCallback)((result) =>
-                {
-                    try
-                    {
-                        var socket = _listener.EndAcceptSocket(result);
+                var networkStream = new NetworkStream(socket);
+                var streamWrapper = new StreamWrapper(networkStream, _log, true);
 
-                        _log.WriteInfoAsync(nameof(ListeningService), nameof(AcceptConnections), null, 
-                            $"New connection from address {socket.RemoteEndPoint}").Wait();
+                var connectionWorker = new ConnectionWorker(streamWrapper, 
+                                _messageHandler, _clientInstanceRepository, _log, CheckConnectionExists);
 
-                        var networkStream = new NetworkStream(socket, ownsSocket: true);
-                        _producerLoadBalancer.AcceptConnection(new StreamWrapper(networkStream, _log, true));
-                    }
-                    catch (ObjectDisposedException exception)
-                    {
-                        _log.WriteErrorAsync(nameof(ListeningService), nameof(AcceptConnections), null, exception);
-                    }
-                    finally
-                    {
-                        autoResetEvent.Set();
-                    }
-                });
+                var workerTask = connectionWorker.AcceptMessagesAsync(_cts.Token);
 
-                var asyncResult = _listener.BeginAcceptSocket(callback, null);
+                // Intentionally disabled unawaited task warning here
+#pragma warning disable 4014
+                workerTask.ContinueWith((task) => _allWorkers.Remove(task));
+#pragma warning restore 4014
 
-                while (!autoResetEvent.WaitOne(500) && !cancellationToken.IsCancellationRequested) ;
+                _allWorkers.Add(workerTask);
             }
+        }
+
+        private async Task<bool> CheckConnectionExists(string id)
+        {
+            if (!_connectionHashSet.TryAdd(id, 0))
+            {
+                await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(CheckConnectionExists),
+                    $"Connection sent token of an already existing connection, dropping new connection!");
+
+                return false;
+            }
+
+            return true;
         }
     }
 }

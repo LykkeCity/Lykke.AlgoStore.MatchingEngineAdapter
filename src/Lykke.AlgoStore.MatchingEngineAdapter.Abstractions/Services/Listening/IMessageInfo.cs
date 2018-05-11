@@ -1,5 +1,6 @@
 ﻿
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
@@ -8,6 +9,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         uint Id { get; set; }
         object Message { get; set; }
 
-        void Reply<T>(MeaResponseType responseType, T message);
+        Task ReplyAsync<T>(MeaResponseType responseType, T message);
     }
 }

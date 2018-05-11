@@ -1,12 +1,11 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
     public interface IStreamWrapper : IDisposable
     {
-        IAsyncResult BeginReadMessage(AsyncCallback callback, object state);
-        IMessageInfo EndReadMessage(IAsyncResult asyncResult);
-        IMessageInfo ReadMessage();
+        Task<IMessageInfo> ReadMessageAsync();
 
         void MarkAuthenticated();
 
@@ -15,6 +14,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
         string ID { get; set; }
 
-        void WriteMessage<T>(uint messageId, byte messageType, T message);
+        Task WriteMessageAsync<T>(uint messageId, byte messageType, T message);
     }
 }

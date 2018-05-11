@@ -259,7 +259,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             return algoClientInstanceRepoMock.Object;
         }
 
-        private ProducingWorker Given_Correct_ProducingWorker(ConcurrentDictionary<string, byte> connectionSet, ILog log)
+        private ConnectionWorker Given_Correct_ProducingWorker(ConcurrentDictionary<string, byte> connectionSet, ILog log)
         {
             var messageQueueMock = new Mock<IMessageQueue>();
             var algoClientInstanceRepo = Given_Correct_AlgoClientInstanceRepository();
@@ -267,7 +267,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             messageQueueMock.Setup(m => m.Enqueue(It.IsAny<IMessageInfo>()))
                             .Callback<IMessageInfo>((request) => request.Reply(MeaResponseType.Pong, request.Message));
 
-            return new ProducingWorker(messageQueueMock.Object, algoClientInstanceRepo, connectionSet, log);
+            return new ConnectionWorker(messageQueueMock.Object, algoClientInstanceRepo, connectionSet, log);
         }
     }
 }

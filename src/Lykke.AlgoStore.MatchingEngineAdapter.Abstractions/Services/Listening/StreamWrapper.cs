@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
@@ -23,17 +24,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         private readonly Stream _stream;
         private readonly Dictionary<byte, Type> _messageTypeMap;
         private readonly ILog _log;
-        private readonly Timer _authenticationTimer;
-
-        private readonly object _sync = new object();
 
         private bool _isDisposed;
-        private bool _isAuthenticated;
 
         public string ID { get; set; }
 
-        public bool AuthenticationEnabled => _authenticationTimer != null;
-        public bool IsAuthenticated => _isAuthenticated;
+        public bool AuthenticationEnabled { get; private set; }
+        public bool IsAuthenticated { get; private set; }
 
         /// <summary>
         /// Initializes a <see cref="StreamWrapper"/> using a given <see cref="Stream"/>
@@ -79,60 +76,68 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             _log = log ?? throw new ArgumentNullException(nameof(_log));
             _messageTypeMap = messageTypeMap ?? _defaultMessageTypeMap;
 
+            AuthenticationEnabled = useAuthentication;
+
             if(useAuthentication)
-                _authenticationTimer = new Timer(EnsureAuthenticated, null, 10_000, Timeout.Infinite);
+                EnsureAuthenticatedAsync();
         }
 
         /// <summary>
-        /// Begins an async message read
+        /// Reads an incoming message.
         /// </summary>
-        /// <param name="callback">The callback to signal once the read is complete</param>
-        /// <param name="state">User-defined state</param>
-        /// <returns>A <see cref="IAsyncResult"/> containing information about the async operation</returns>
+        /// <returns>
+        /// A <see cref="Task{IMessageInfo}"/> which, when completed, 
+        /// will contain information about the request and the message
+        /// </returns>
         /// <exception cref="ObjectDisposedException">Thrown if the <see cref="StreamWrapper"/> is disposed</exception>
-        public IAsyncResult BeginReadMessage(AsyncCallback callback, object state)
+        /// <exception cref="InvalidDataException">Thrown when the message type or payload is invalid</exception>
+        public async Task<IMessageInfo> ReadMessageAsync()
         {
             CheckDisposed();
 
-            return new ReadMessageOperation(_stream, ParseMessage, callback, state);
-        }
+            // 1 byte - message type, 4 bytes - request ID, 2 bytes - payload length
+            var buffer = new byte[7];
 
-        /// <summary>
-        /// Finishes an async message read. This method blocks if the corresponding 
-        /// <see cref="BeginReadMessage(AsyncCallback, object)"/> has not yet finished
-        /// </summary>
-        /// <param name="asyncResult">
-        /// The <see cref="IAsyncResult"/> returned by the corresponding <see cref="BeginReadMessage(AsyncCallback, object)"/>
-        /// </param>
-        /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
-        /// <exception cref="ArgumentException">Thrown when an invalid <paramref name="asyncResult"/> is given</exception>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="StreamWrapper"/> is disposed</exception>
-        public IMessageInfo EndReadMessage(IAsyncResult asyncResult)
-        {
-            CheckDisposed();
+            await _stream.ReadAsync(buffer, 0, buffer.Length);
 
-            var operation = asyncResult as ReadMessageOperation;
+            using (var memoryStream = new MemoryStream())
+            using (var binaryReader = new BinaryReader(memoryStream))
+            {
+                await memoryStream.WriteAsync(buffer, 0, buffer.Length);
 
-            if (operation == null)
-                throw new ArgumentException($"{nameof(asyncResult)} is not valid for this operation");
+                memoryStream.Position = 0;
 
-            return operation.Result;
-        }
+                var typeByte = binaryReader.ReadByte();
 
-        /// <summary>
-        /// Synchronous version of the <see cref="BeginReadMessage(AsyncCallback, object)"/>
-        /// and <see cref="EndReadMessage(IAsyncResult)"/> methods. This method will block until a message is available.
-        /// </summary>
-        /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
-        /// <exception cref="ObjectDisposedException">Thrown if the <see cref="StreamWrapper"/> is disposed</exception>
-        public IMessageInfo ReadMessage()
-        {
-            CheckDisposed();
+                if (!_messageTypeMap.ContainsKey(typeByte))
+                    throw new InvalidDataException($"Message type {typeByte} has no handler");
 
-            var buffer = new byte[1];
-            _stream.Read(buffer, 0, buffer.Length);
+                var result = new MessageInfo(this);
 
-            return ParseMessage(buffer[0], _stream);
+                result.Id = binaryReader.ReadUInt32();
+
+                var payloadLength = binaryReader.ReadUInt16();
+                buffer = new byte[payloadLength];
+
+                await _stream.ReadAsync(buffer, 0, payloadLength);
+
+                try
+                {
+                    using (var tempMs = new MemoryStream(buffer))
+                    {
+                        var messageType = _messageTypeMap[typeByte];
+                        result.Message = Serializer.NonGeneric.Deserialize(messageType, tempMs);
+
+                        return result;
+                    }
+                }
+                catch (Exception e)
+                {
+                    // Rethrow wrapped exception here to prevent having to catch specific library exceptions
+                    throw new InvalidDataException("Error deserializing message payload. See inner exception for details",
+                                                   e);
+                }
+            }
         }
 
         /// <summary>
@@ -143,33 +148,36 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// <param name="messageType">The message type</param>
         /// <param name="message">The message to send</param>
         /// <exception cref="ObjectDisposedException">Thrown if the <see cref="StreamWrapper"/> is disposed</exception>
-        public void WriteMessage<T>(uint messageId, byte messageType, T message)
+        public async Task WriteMessageAsync<T>(uint messageId, byte messageType, T message)
         {
             CheckDisposed();
+
+            byte[] payload;
 
             using (var ms = new MemoryStream())
             {
                 Serializer.Serialize(ms, message);
 
-                var bytes = ms.ToArray();
+                payload = ms.ToArray();
+            }
 
-                lock (_sync)
-                {
-                    using (var bw = new BinaryWriter(_stream, Encoding.UTF8, true))
-                    {
-                        bw.Write(messageType);
-                        bw.Write(messageId);
-                        bw.Write((ushort)bytes.Length);
-                        bw.Write(bytes);
-                        bw.Flush();
-                    }
-                }
+            using (var ms = new MemoryStream())
+            using (var bw = new BinaryWriter(ms, Encoding.UTF8, true))
+            {
+                bw.Write(messageType);
+                bw.Write(messageId);
+                bw.Write((ushort)payload.Length);
+                bw.Write(payload);
+                bw.Flush();
+
+                ms.Position = 0;
+                await ms.CopyToAsync(_stream);
             }
         }
 
         public void MarkAuthenticated()
         {
-            _isAuthenticated = true;
+            IsAuthenticated = true;
         }
 
         /// <summary>
@@ -193,56 +201,17 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             _isDisposed = true;
         }
 
-        /// <summary>
-        /// Reads a message given a certain message type
-        /// </summary>
-        /// <param name="messageType">The type of the message to read</param>
-        /// <param name="stream">The stream to read the message from</param>
-        /// <returns>A <see cref="MessageInfo"/> containing information about the request and the message</returns>
-        /// <exception cref="InvalidDataException">Thrown when the message type or payload is invalid</exception>
-        private MessageInfo ParseMessage(byte messageType, Stream stream)
+        private async void EnsureAuthenticatedAsync()
         {
-            if (!_messageTypeMap.ContainsKey(messageType))
-                throw new InvalidDataException($"Message type {messageType} has no handler");
+            await Task.Delay(10_000);
 
-            var result = new MessageInfo(this);
-
-            using (var br = new BinaryReader(stream, Encoding.UTF8, true))
-            {
-                lock (_sync)
-                {
-                    result.Id = br.ReadUInt32();
-                    var dataLength = br.ReadUInt16();
-
-                    var type = _messageTypeMap[messageType];
-
-                    using (var ms = new MemoryStream(br.ReadBytes(dataLength)))
-                    {
-                        try
-                        {
-                            result.Message = Serializer.NonGeneric.Deserialize(type, ms);
-                        }
-                        catch(Exception e)
-                        {
-                            // Rethrow wrapped exception here to prevent having to catch specific library exceptions
-                            throw new InvalidDataException("Error deserializing message payload. See inner exception for details",
-                                                           e);
-                        }
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        private void EnsureAuthenticated(object state)
-        {
             if (_isDisposed) return;
 
-            if (_isAuthenticated) return;
+            if (IsAuthenticated) return;
 
-            _log.WriteWarning(nameof(StreamWrapper), nameof(EnsureAuthenticated),
+            await _log.WriteWarningAsync(nameof(StreamWrapper), nameof(EnsureAuthenticatedAsync),
                 "Client failed to authenticate within the time limit, disposing connection!");
+
             Dispose();
         }
 

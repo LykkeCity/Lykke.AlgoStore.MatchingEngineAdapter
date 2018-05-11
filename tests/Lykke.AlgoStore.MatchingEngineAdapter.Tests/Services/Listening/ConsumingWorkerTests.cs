@@ -25,7 +25,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             var matchingEngineAdapterMock = Given_CorrectMatchingEngineAdapterMock();
             var logMock = Given_Log();
 
-            var consumingWorker = new ConsumingWorker(messageQueueMock.Object, matchingEngineAdapterMock.Object, logMock);
+            var consumingWorker = new MessageHandler(messageQueueMock.Object, matchingEngineAdapterMock.Object, logMock);
 
             Thread.Sleep(1000);
 

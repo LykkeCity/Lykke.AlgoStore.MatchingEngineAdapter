@@ -1,10 +1,10 @@
-﻿using Autofac;
-using Common;
+﻿using Common;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Services
 {
-    public interface IListeningService : IStartable, IStopable
+    public interface IListeningService : IStopable
     {
-
+        Task Start();
     }
 }

@@ -49,11 +49,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
                 .WithParameter(TypedParameter.From(_settings.CurrentValue.AlgoStoreMatchingEngineAdapter.Listener.Port))
                 .SingleInstance();
 
-            builder.RegisterType<ProducerLoadBalancer>()
-                .As<IProducerLoadBalancer>();
-
-            builder.RegisterType<MessageQueue>()
-                .As<IMessageQueue>()
+            builder.RegisterType<MessageHandler>()
+                .As<IMessageHandler>()
                 .SingleInstance();
 
             builder.RegisterInstance<IAlgoInstanceTradeRepository>(CreateAlgoTradeRepository(
