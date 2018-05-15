@@ -22,35 +22,22 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _requestManager.SetClientAndInstanceId(clientId, instanceId);
         }
 
-        public Task<string> Ping(string content)
-        {
-            return Task.Run(() => PingSync(content));
-        }
-
-        private string PingSync(string content)
+        public async Task<string> PingAsync(string content)
         {
             var pingRequest = new PingRequest { Message = content };
 
-            _log.WriteInfo(nameof(MatchingEngineAdapterClient), nameof(PingSync),
+            await _log.WriteInfoAsync(nameof(MatchingEngineAdapterClient), nameof(PingAsync),
                            $"Sending MEA Ping request with content {content}");
 
-            (var waitHandle, var requestId) = _requestManager.MakeRequest(MeaRequestType.Ping, pingRequest);
+            var message = await _requestManager.MakeRequestAsync(MeaRequestType.Ping, pingRequest);
 
-            waitHandle.WaitOne();
-
-            var response = _requestManager.GetResponse(requestId) as PingRequest;
+            var response = message.Message as PingRequest;
 
             return response?.Message;
         }
 
-        public Task<ResponseModel<double>> PlaceMarketOrder(string walletId, string assetPairId, OrderAction orderAction, double volume,
-            bool straight, string instanceId, double? reservedLimitVolume = null)
-        {
-            return Task.Run(() => HandleMarketOrderRequest(walletId, assetPairId, orderAction, volume, straight, instanceId, reservedLimitVolume));
-        }
-
-        private ResponseModel<double> HandleMarketOrderRequest(string walletId, string assetPairId, OrderAction orderAction, double volume,
-            bool straight, string instanceId, double? reservedLimitVolume = null)
+        public async Task<ResponseModel<double>> PlaceMarketOrderAsync(string walletId, string assetPairId, OrderAction orderAction,
+            double volume, bool straight, string instanceId, double? reservedLimitVolume = null)
         {
             var marketOrderRequest = new MarketOrderRequest
             {
@@ -62,14 +49,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
                 InstanceId = instanceId
             };
 
-            _log.WriteInfo(nameof(MatchingEngineAdapterClient), nameof(HandleMarketOrderRequest),
+            await _log.WriteInfoAsync(nameof(MatchingEngineAdapterClient), nameof(PlaceMarketOrderAsync),
                 $"Sending MEA market order request for algo instance with Id {instanceId}");
 
-            (var waitHandle, var requestId) = _requestManager.MakeRequest(MeaRequestType.MarketOrderRequest, marketOrderRequest);
+            var message = await _requestManager.MakeRequestAsync(MeaRequestType.MarketOrderRequest, marketOrderRequest);
 
-            waitHandle.WaitOne();
-
-            var response = _requestManager.GetResponse(requestId) as ResponseModel<double>;
+            var response = message.Message as ResponseModel<double>;
 
             return response;
         }
