@@ -101,11 +101,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     await _messageHandler.HandleMessage(message);
                 }
             }
-            catch (System.IO.InvalidDataException)
-            {
-                await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), 
-                    $"Client {_connection} sent invalid data, dropping connection!");
-            }
             catch(AggregateException e)
             {
                 e.Flatten().Handle((ex) =>
@@ -124,17 +119,24 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
         private bool HandleConnectionFailure(Exception ex)
         {
-            if (ex is System.IO.IOException || ex is ObjectDisposedException)
+            switch(ex)
             {
-                _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync),
-                        ex is ObjectDisposedException ?
-                                $"Connection {_connection} was dropped" :
-                                $"Connection {_connection} was lost");
+                case System.IO.IOException ioe:
+                    _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), $"Connection {_connection} was lost");
+                    return true;
 
-                return true;
+                case ObjectDisposedException ode:
+                    _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), $"Connection {_connection} was dropped");
+                    return true;
+
+                case System.IO.InvalidDataException ide:
+                    _log.WriteWarning(nameof(ConnectionWorker), nameof(AcceptMessagesAsync),
+                        $"Client {_connection} sent invalid data, dropping connection!");
+                    return true;
+
+                default:
+                    return false;
             }
-
-            return false;
         }
 
         private async Task<bool> TryAuthenticate(IStreamWrapper connection, IMessageInfo messageInfo)

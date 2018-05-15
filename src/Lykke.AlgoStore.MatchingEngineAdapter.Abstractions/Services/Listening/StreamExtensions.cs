@@ -20,6 +20,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             {
                 var bytesRead = await stream.ReadAsync(buffer, bytesReadTotal, buffer.Length - bytesReadTotal);
 
+                if (bytesRead == 0)
+                    throw new EndOfStreamException();
+
                 bytesReadTotal += bytesRead;
             }
         }

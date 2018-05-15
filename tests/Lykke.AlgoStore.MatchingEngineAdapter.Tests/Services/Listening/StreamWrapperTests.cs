@@ -6,6 +6,8 @@ using NUnit.Framework;
 using ProtoBuf;
 using System;
 using System.IO;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
 {
@@ -15,7 +17,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         [Test]
         public void StreamWrapper_Ctor_ThrowsArgumentNull_WhenStreamNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new StreamWrapper(null, null));
+            Assert.Throws<ArgumentNullException>(() => new StreamWrapper(null, null, null));
         }
 
         [Test]
@@ -23,103 +25,64 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         {
             using (var ms = new MemoryStream())
             {
-                Assert.Throws<ArgumentNullException>(() => new StreamWrapper(ms, null));
+                Assert.Throws<ArgumentNullException>(() => new StreamWrapper(ms, null, null));
             }
         }
 
         [Test]
-        public void StreamWrapper_BeginReadMessage_ThrowsObjectDisposed_WhenWrapperDisposed()
+        public void StreamWrapper_ReadMessageAsync_ThrowsObjectDisposed_WhenWrapperDisposed()
         {
-            AssertMethodThrowsObjectDisposed((sw) => sw.BeginReadMessage(null, null));
+            AssertMethodThrowsObjectDisposed((sw) => sw.ReadMessageAsync());
         }
 
         [Test]
-        public void StreamWrapper_EndReadMessage_ThrowsObjectDisposed_WhenWrapperDisposed()
+        public void StreamWrapper_WriteMessageAsync_ThrowsObjectDisposed_WhenWrapperDisposed()
         {
-            AssertMethodThrowsObjectDisposed((sw) => sw.EndReadMessage(null));
+            AssertMethodThrowsObjectDisposed((sw) => sw.WriteMessageAsync(0, 0, new object()));
         }
 
         [Test]
-        public void StreamWrapper_ReadMessage_ThrowsObjectDisposed_WhenWrapperDisposed()
-        {
-            AssertMethodThrowsObjectDisposed((sw) => sw.ReadMessage());
-        }
-
-        [Test]
-        public void StreamWrapper_WriteMessage_ThrowsObjectDisposed_WhenWrapperDisposed()
-        {
-            AssertMethodThrowsObjectDisposed((sw) => sw.WriteMessage(0, 0, new object()));
-        }
-
-        [Test]
-        public void StreamWrapper_ReadMessage_ThrowsInvalidData_WhenUnknownMessage()
+        public void StreamWrapper_ReadMessageAsync_ThrowsInvalidData_WhenUnknownMessage()
         {
             var log = Given_Correct_Log();
-            var memoryStream = new MemoryStream(new byte[] { 255 });
-            var streamWrapper = new StreamWrapper(memoryStream, log);
+            var memoryStream = new MemoryStream(new byte[] { 255, 0, 0, 0, 0, 0, 0, 0 });
+            var endPoint = Given_Correct_IPEndPoint();
+            var streamWrapper = new StreamWrapper(memoryStream, log, endPoint);
 
-            Assert.Throws<InvalidDataException>(() => streamWrapper.ReadMessage());
+            var task = streamWrapper.ReadMessageAsync();
+
+            task.ContinueWith(
+                t => Assert.AreEqual(typeof(InvalidDataException), t.Exception.InnerExceptions[0].GetType())).Wait();
         }
 
         [Test]
-        public void StreamWrapper_ReadMessage_ThrowsInvalidData_WhenInvalidProtobufFormat()
+        public void StreamWrapper_ReadMessageAsync_ThrowsInvalidData_WhenInvalidProtobufFormat()
         {
             var log = Given_Correct_Log();
             var memoryStream = new MemoryStream(new byte[] { (byte)MeaRequestType.Ping, // Message type
                                                              0, 0, 0, 0,                // Request ID
                                                              1, 0,                      // Payload length
                                                              1 });                      // Junk payload data
+            var endPoint = Given_Correct_IPEndPoint();
 
-            var streamWrapper = new StreamWrapper(memoryStream, log);
+            var streamWrapper = new StreamWrapper(memoryStream, log, endPoint);
 
-            Assert.Throws<InvalidDataException>(() => streamWrapper.ReadMessage());
+            var task = streamWrapper.ReadMessageAsync();
+
+            task.ContinueWith(
+                t => Assert.AreEqual(typeof(InvalidDataException), t.Exception.InnerExceptions[0].GetType())).Wait();
         }
 
         [Test]
-        public void StreamWrapper_ApmReadMessage_ThrowsInvalidData_WhenInvalidProtobufFormat()
-        {
-            var log = Given_Correct_Log();
-            var memoryStream = new MemoryStream(new byte[] { (byte)MeaRequestType.Ping, // Message type
-                                                             0, 0, 0, 0,                // Request ID
-                                                             1, 0,                      // Payload length
-                                                             1 });                      // Junk payload data
-
-            var streamWrapper = new StreamWrapper(memoryStream, log);
-
-            var asyncResult = streamWrapper.BeginReadMessage(null, null);
-            asyncResult.AsyncWaitHandle.WaitOne();
-
-            Assert.Throws<InvalidDataException>(() => streamWrapper.EndReadMessage(asyncResult));
-        }
-
-        [Test]
-        public void StreamWrapper_ReadMessage_ReturnsCorrectMessage_ForCorrectData()
+        public void StreamWrapper_ReadMessageAsync_ReturnsCorrectMessage_ForCorrectData()
         {
             var log = Given_Correct_Log();
             var request = new PingRequest { Message = "test" };
             var memoryStream = Given_MemoryStream_WithWrittenRequest(1, request);
-            var streamWrapper = new StreamWrapper(memoryStream, log);
+            var endPoint = Given_Correct_IPEndPoint();
+            var streamWrapper = new StreamWrapper(memoryStream, log, endPoint);
 
-            var result = streamWrapper.ReadMessage();
-            var resultMessage = result.Message as PingRequest;
-
-            Assert.AreEqual(1, result.Id);
-            Assert.AreEqual(request.Message, resultMessage.Message);
-        }
-
-        [Test]
-        public void StreamWrapper_ApmReadMessage_ReturnsCorrectMessage_ForCorrectData()
-        {
-            var log = Given_Correct_Log();
-            var request = new PingRequest { Message = "test" };
-            var memoryStream = Given_MemoryStream_WithWrittenRequest(1, request);
-            var streamWrapper = new StreamWrapper(memoryStream, log);
-
-            var asyncResult = streamWrapper.BeginReadMessage(null, null);
-
-            asyncResult.AsyncWaitHandle.WaitOne();
-
-            var result = streamWrapper.EndReadMessage(asyncResult);
+            var result = streamWrapper.ReadMessageAsync().Result;
             var resultMessage = result.Message as PingRequest;
 
             Assert.AreEqual(1, result.Id);
@@ -146,21 +109,31 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             return memoryStream;
         }
 
-        private void AssertMethodThrowsObjectDisposed(Action<StreamWrapper> codeToTest)
+        private void AssertMethodThrowsObjectDisposed(Func<StreamWrapper, Task> codeToTest)
         {
             var log = Given_Correct_Log();
+            var endPoint = Given_Correct_IPEndPoint();
             var memoryStream = new MemoryStream();
-            var streamWrapper = new StreamWrapper(memoryStream, log);
+            var streamWrapper = new StreamWrapper(memoryStream, log, endPoint);
 
             streamWrapper.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => codeToTest(streamWrapper));
+            var task = codeToTest(streamWrapper);
+
+            task.ContinueWith(
+                t => Assert.AreEqual(typeof(ObjectDisposedException),
+                                     t.Exception.InnerExceptions[0].GetType())).Wait();
         }
 
         private ILog Given_Correct_Log()
         {
             var logMock = new Mock<ILog>();
             return logMock.Object;
+        }
+
+        private IPEndPoint Given_Correct_IPEndPoint()
+        {
+            return new IPEndPoint(IPAddress.Loopback, 0);
         }
     }
 }

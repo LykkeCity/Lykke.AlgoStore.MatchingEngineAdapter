@@ -12,6 +12,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests.MarketOrderRequest;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
@@ -63,37 +64,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             var request = new PingRequest { Message = $"{STARTED_GUID_PLACEHOLDER}_{STARTED_GUID_PLACEHOLDER}" };
 
             var log = Given_Correct_Log();
-            var connectionSet = new ConcurrentDictionary<string, byte>();
 
-            var asyncResultMock = Given_Verifiable_AsyncResultMock();
-            var messageInfoMock = Given_Verifiable_MessageInfoMock(request, false);
-            var listenerStreamMock =
-                Given_Verifiable_ListenerStreamWrapperMock(asyncResultMock.Object, messageInfoMock.Object, false);
+            var messageInfoMock = Given_Verifiable_MessageInfoMock(request, true);
+            var streamWrapperMock = Given_Verifiable_StreamWrapperMock(messageInfoMock.Object, true);
 
-            var secondAsyncResultMock = Given_Verifiable_AsyncResultMock();
-            var failingMessageInfoMock = Given_Verifiable_MessageInfoMock(request, true);
-            var secondListenerStreamMock =
-                Given_Verifiable_ListenerStreamWrapperMock(secondAsyncResultMock.Object,
-                                                           failingMessageInfoMock.Object, true);
+            var producingWorker = Given_Correct_ConnectionWorker(streamWrapperMock.Object, log, false);
 
-            var producingWorker = Given_Correct_ProducingWorker(connectionSet, log);
+            producingWorker.AcceptMessagesAsync(CancellationToken.None).Wait();
 
-            producingWorker.AddConnection(listenerStreamMock.Object);
-
-            Thread.Sleep(3000);
-
-            producingWorker.AddConnection(secondListenerStreamMock.Object);
-
-            Thread.Sleep(3000);
-
-            listenerStreamMock.Verify();
-            secondListenerStreamMock.Verify();
-
+            streamWrapperMock.Verify();
             messageInfoMock.Verify();
-            failingMessageInfoMock.Verify();
-
-            asyncResultMock.Verify();
-            secondAsyncResultMock.Verify();
         }
 
         [Test]
@@ -101,61 +81,39 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         { 
             var log = Given_Correct_Log();
 
-            var connectionSet = new ConcurrentDictionary<string, byte>();
             var request = new PingRequest { Message = $"{STARTED_GUID_PLACEHOLDER}_{STARTED_GUID_PLACEHOLDER}" };
-            var asyncResultMock = Given_Verifiable_AsyncResultMock();
             var messageInfoMock = Given_Verifiable_MessageInfoMock(request, false);
-            var listenerStreamMock =
-                Given_Verifiable_ListenerStreamWrapperMock(asyncResultMock.Object, messageInfoMock.Object, false);
+            var streamWrapperMock = Given_Verifiable_StreamWrapperMock(messageInfoMock.Object, false);
 
-            var producingWorker = Given_Correct_ProducingWorker(connectionSet, log);
+            var producingWorker = Given_Correct_ConnectionWorker(streamWrapperMock.Object, log, true);
 
-            producingWorker.AddConnection(listenerStreamMock.Object);
+            producingWorker.AcceptMessagesAsync(CancellationToken.None);
 
             Thread.Sleep(250);
 
-            listenerStreamMock.Verify();
+            streamWrapperMock.Verify();
             messageInfoMock.Verify();
-            asyncResultMock.Verify();
         }
 
         private void AssertRequestDisconnects<T>(T request, byte requestType)
         {
             var log = Given_Correct_Log();
 
-            var connectionSet = new ConcurrentDictionary<string, byte>();
-            var asyncResultMock = Given_Verifiable_AsyncResultMock();
             var messageInfoMock = Given_Verifiable_MessageInfoMock(request, true);
-            var listenerStreamMock = 
-                Given_Verifiable_ListenerStreamWrapperMock(asyncResultMock.Object, messageInfoMock.Object, true);
+            var streamWrapperMock = Given_Verifiable_StreamWrapperMock(messageInfoMock.Object, true);
 
-            var producingWorker = Given_Correct_ProducingWorker(connectionSet, log);
+            var producingWorker = Given_Correct_ConnectionWorker(streamWrapperMock.Object, log, true);
 
-            producingWorker.AddConnection(listenerStreamMock.Object);
+            producingWorker.AcceptMessagesAsync(CancellationToken.None).Wait();
 
-            Thread.Sleep(250);
-
-            listenerStreamMock.Verify();
+            streamWrapperMock.Verify();
             messageInfoMock.Verify();
-            asyncResultMock.Verify();
         }
 
         private ILog Given_Correct_Log()
         {
             var logMock = new Mock<ILog>();
             return logMock.Object;
-        }
-
-        private Mock<IAsyncResult> Given_Verifiable_AsyncResultMock()
-        {
-            var autoReset = new AutoResetEvent(true);
-
-            var asyncResultMock = new Mock<IAsyncResult>(MockBehavior.Strict);
-            asyncResultMock.SetupGet(a => a.AsyncWaitHandle)
-                           .Returns(autoReset)
-                           .Verifiable();
-
-            return asyncResultMock;
         }
 
         private Mock<IMessageInfo> Given_Verifiable_MessageInfoMock(object messageToReturn, bool replyShouldFail)
@@ -166,21 +124,21 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
                            .Returns(messageToReturn)
                            .Verifiable();
 
-            messageInfoMock.Setup(m => m.Reply(MeaResponseType.Pong, It.IsAny<PingRequest>()))
-                           .Callback((MeaResponseType response, PingRequest request) =>
-                           {
-                               if (replyShouldFail)
-                                   Assert.AreEqual("Fail", request.Message);
-                               else
-                                   Assert.AreEqual("Success", request.Message);
-                           })
-                           .Verifiable();
+            var setup = messageInfoMock.Setup(m => m.ReplyAsync(MeaResponseType.Pong, It.IsAny<PingRequest>()))
+                                       .Returns(Task.CompletedTask);
+            setup.Callback((MeaResponseType response, PingRequest request) =>
+            {
+                if (replyShouldFail)
+                    Assert.AreEqual("Fail", request.Message);
+                else
+                    Assert.AreEqual("Success", request.Message);
+            });
+            setup.Verifiable();
 
             return messageInfoMock;
         }
 
-        private Mock<IStreamWrapper> Given_Verifiable_ListenerStreamWrapperMock(
-            IAsyncResult asyncResult,
+        private Mock<IStreamWrapper> Given_Verifiable_StreamWrapperMock(
             IMessageInfo messageInfo,
             bool shouldFail)
         {
@@ -200,13 +158,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             listenerStreamMock.SetupSet(l => l.ID = It.IsAny<string>())
                                      .Callback((string val) => id = val);
 
-            listenerStreamMock.Setup(l => l.BeginReadMessage(It.IsAny<AsyncCallback>(), It.IsAny<object>()))
-                                     .Returns(asyncResult)
-                                     .Verifiable();
-
-            listenerStreamMock.Setup(l => l.EndReadMessage(It.IsAny<IAsyncResult>()))
-                                     .Returns(messageInfo)
-                                     .Verifiable();
+            listenerStreamMock.Setup(l => l.ReadMessageAsync())
+                              .ReturnsAsync(messageInfo)
+                              .Verifiable();
 
             if (!shouldFail)
             {
@@ -259,15 +213,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             return algoClientInstanceRepoMock.Object;
         }
 
-        private ConnectionWorker Given_Correct_ProducingWorker(ConcurrentDictionary<string, byte> connectionSet, ILog log)
+        private ConnectionWorker Given_Correct_ConnectionWorker(IStreamWrapper streamWrapper, ILog log, bool shouldAuthenticate)
         {
-            var messageQueueMock = new Mock<IMessageQueue>();
+            var messageHandlerMock = new Mock<IMessageHandler>();
             var algoClientInstanceRepo = Given_Correct_AlgoClientInstanceRepository();
 
-            messageQueueMock.Setup(m => m.Enqueue(It.IsAny<IMessageInfo>()))
-                            .Callback<IMessageInfo>((request) => request.Reply(MeaResponseType.Pong, request.Message));
+            messageHandlerMock.Setup(m => m.HandleMessage(It.IsAny<IMessageInfo>()))
+                            .Callback<IMessageInfo>((request) => request.ReplyAsync(MeaResponseType.Pong, request.Message).Wait());
 
-            return new ConnectionWorker(messageQueueMock.Object, algoClientInstanceRepo, connectionSet, log);
+            return new ConnectionWorker(streamWrapper, messageHandlerMock.Object, algoClientInstanceRepo, log,
+                (str) => Task.FromResult(shouldAuthenticate));
         }
     }
 }
