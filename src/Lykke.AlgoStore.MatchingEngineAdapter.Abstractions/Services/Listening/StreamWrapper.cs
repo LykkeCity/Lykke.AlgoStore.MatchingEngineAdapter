@@ -98,7 +98,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             // 1 byte - message type, 4 bytes - request ID, 2 bytes - payload length
             var buffer = new byte[7];
 
-            await _stream.ReadAsync(buffer, 0, buffer.Length);
+            await _stream.FillBufferAsync(buffer);
 
             using (var memoryStream = new MemoryStream())
             using (var binaryReader = new BinaryReader(memoryStream))
@@ -119,7 +119,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
                 var payloadLength = binaryReader.ReadUInt16();
                 buffer = new byte[payloadLength];
 
-                await _stream.ReadAsync(buffer, 0, payloadLength);
+                await _stream.FillBufferAsync(buffer);
 
                 try
                 {
