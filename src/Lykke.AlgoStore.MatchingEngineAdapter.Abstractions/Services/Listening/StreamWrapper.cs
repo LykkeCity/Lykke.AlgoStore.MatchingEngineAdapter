@@ -4,8 +4,8 @@ using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
@@ -24,6 +24,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         private readonly Stream _stream;
         private readonly Dictionary<byte, Type> _messageTypeMap;
         private readonly ILog _log;
+        private readonly EndPoint _remoteEndPoint;
 
         private bool _isDisposed;
 
@@ -36,12 +37,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// Initializes a <see cref="StreamWrapper"/> using a given <see cref="Stream"/>
         /// </summary>
         /// <param name="stream">The <see cref="Stream"/> to wrap</param>
-        /// /// <param name="log">The logger to use</param>
+        /// <param name="log">The logger to use</param>
+        /// <param name="remoteEndPoint">The remote address of the connection</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="stream"/> or <paramref name="log"/> is null
         /// </exception>
-        public StreamWrapper(Stream stream, ILog log) 
-            : this(stream, log, false)
+        public StreamWrapper(Stream stream, ILog log, EndPoint remoteEndPoint) 
+            : this(stream, log, remoteEndPoint, false)
         {
         }
 
@@ -50,12 +52,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// </summary>
         /// <param name="stream">The <see cref="Stream"/> to wrap</param>
         /// <param name="log">The logger to use</param>
+        /// <param name="remoteEndPoint">The remote address of the connection</param>
         /// <param name="useAuthentication">Whether the connection is required to be authenticated or not</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="stream"/> or <paramref name="log"/> is null
         /// </exception>
-        public StreamWrapper(Stream stream, ILog log, bool useAuthentication)
-            : this(stream, log, useAuthentication, _defaultMessageTypeMap)
+        public StreamWrapper(Stream stream, ILog log, EndPoint remoteEndPoint, bool useAuthentication)
+            : this(stream, log, remoteEndPoint, useAuthentication, _defaultMessageTypeMap)
         {
         }
 
@@ -64,17 +67,19 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// </summary>
         /// <param name="stream">The <see cref="Stream"/> to wrap</param>
         /// <param name="log">The logger to use</param>
+        /// <param name="remoteEndPoint">The remote address of the connection</param>
         /// <param name="useAuthentication">Whether the connection is required to be authenticated or not</param>
         /// <param name="messageTypeMap">The type map to use when deserializing messages</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="stream"/> or <paramref name="log"/> is null
         /// </exception>
-        public StreamWrapper(Stream stream, ILog log, bool useAuthentication, 
+        public StreamWrapper(Stream stream, ILog log, EndPoint remoteEndPoint, bool useAuthentication, 
             Dictionary<byte, Type> messageTypeMap)
         {
             _stream = stream ?? throw new ArgumentNullException(nameof(stream));
             _log = log ?? throw new ArgumentNullException(nameof(_log));
             _messageTypeMap = messageTypeMap ?? _defaultMessageTypeMap;
+            _remoteEndPoint = remoteEndPoint ?? throw new ArgumentNullException(nameof(remoteEndPoint));
 
             AuthenticationEnabled = useAuthentication;
 
@@ -188,6 +193,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             Dispose(true);
         }
 
+        public override string ToString()
+        {
+            return $"{(ID ?? "UNKNOWN_ID")} ({_remoteEndPoint})";
+        }
+
         protected virtual void Dispose(bool isDisposing)
         {
             if (_isDisposed) return;
@@ -210,7 +220,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             if (IsAuthenticated) return;
 
             await _log.WriteWarningAsync(nameof(StreamWrapper), nameof(EnsureAuthenticatedAsync),
-                "Client failed to authenticate within the time limit, disposing connection!");
+                $"Client {ToString()} failed to authenticate within the time limit, disposing connection!");
 
             Dispose();
         }

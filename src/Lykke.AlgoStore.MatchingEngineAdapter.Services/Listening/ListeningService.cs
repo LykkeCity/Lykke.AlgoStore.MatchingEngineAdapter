@@ -117,8 +117,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             {
                 var socket = await _listener.AcceptSocketAsync();
 
+                await _log.WriteInfoAsync(nameof(ListeningService), nameof(AcceptConnections),
+                    $"Accepting incoming connection from {socket.RemoteEndPoint}");
+
                 var networkStream = new NetworkStream(socket);
-                var streamWrapper = new StreamWrapper(networkStream, _log, true);
+                var streamWrapper = new StreamWrapper(networkStream, _log, socket.RemoteEndPoint, true);
 
                 var connectionWorker = new ConnectionWorker(streamWrapper, 
                                 _messageHandler, _clientInstanceRepository, _log, CheckConnectionExists);
@@ -127,7 +130,18 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
                 // Intentionally disabled unawaited task warning here
 #pragma warning disable 4014
-                workerTask.ContinueWith((task) => _allWorkers.Remove(task));
+                workerTask.ContinueWith((task) =>
+                {
+                    if(task.IsFaulted)
+                    {
+                        _log.WriteError(nameof(ListeningService), nameof(AcceptConnections),
+                            task.Exception);
+                    }
+
+                    _allWorkers.Remove(task);
+                    if(!string.IsNullOrEmpty(streamWrapper.ID))
+                        _connectionHashSet.Remove(streamWrapper.ID, out byte unused);
+                });
 #pragma warning restore 4014
 
                 _allWorkers.Add(workerTask);

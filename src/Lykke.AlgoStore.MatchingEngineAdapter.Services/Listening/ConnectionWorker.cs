@@ -103,15 +103,38 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             }
             catch (System.IO.InvalidDataException)
             {
-                _log.WriteWarning(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), $"Client sent invalid data, dropping connection!");
+                await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), 
+                    $"Client {_connection} sent invalid data, dropping connection!");
             }
-            catch (Exception e) when (e is System.IO.IOException || e is ObjectDisposedException)
+            catch(AggregateException e)
             {
-                _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync),
-                    e is ObjectDisposedException ? "Connection to client was dropped" : "Connection to client was lost");
+                e.Flatten().Handle((ex) =>
+                {
+                    return HandleConnectionFailure(ex);
+                });
+            }
+            catch (Exception e)
+            {
+                if (!HandleConnectionFailure(e))
+                    throw;
             }
 
             Dispose();
+        }
+
+        private bool HandleConnectionFailure(Exception ex)
+        {
+            if (ex is System.IO.IOException || ex is ObjectDisposedException)
+            {
+                _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync),
+                        ex is ObjectDisposedException ?
+                                $"Connection {_connection} was dropped" :
+                                $"Connection {_connection} was lost");
+
+                return true;
+            }
+
+            return false;
         }
 
         private async Task<bool> TryAuthenticate(IStreamWrapper connection, IMessageInfo messageInfo)
@@ -123,14 +146,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             if (pingRequest == null)
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
-                    $"Connection didn't send {nameof(PingRequest)} as the first message, dropping connection!");
+                    $"Connection {connection} didn't send {nameof(PingRequest)} as the first message, dropping connection!");
                 return false;
             }
 
             if(string.IsNullOrEmpty(pingRequest.Message))
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
-                    $"Connection sent empty {nameof(PingRequest)}, dropping connection!");
+                    $"Connection {connection} sent empty {nameof(PingRequest)}, dropping connection!");
                 return false;
             }
 
@@ -139,14 +162,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             if (splitString.Length != 2)
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
-                    $"Connection sent invalid format {nameof(PingRequest)}, dropping connection!");
+                    $"Connection {connection} sent invalid format {nameof(PingRequest)}, dropping connection!");
                 return false;
             }
 
             if (!_algoClientInstanceRepository.ExistsAlgoInstanceDataWithClientIdAsync(splitString[0], splitString[1]).Result)
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
-                    $"Connection sent {nameof(PingRequest)} containing unknown client ID/instance ID combination, dropping connection!");
+                    $"Connection {connection} sent {nameof(PingRequest)} containing unknown client ID/instance ID combination, dropping connection!");
                 return false;
             }
 
@@ -154,7 +177,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 .AlgoInstanceStatus != AlgoInstanceStatus.Started)
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
-                    $"Connection sent {nameof(PingRequest)} containing algo instance with status different from started, dropping connection!");
+                    $"Connection {connection} sent {nameof(PingRequest)} containing algo instance with status different from started, dropping connection!");
                 return false;
             }
 
@@ -163,6 +186,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
             connection.ID = pingRequest.Message;
             connection.MarkAuthenticated();
+
+            await _log.WriteInfoAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
+                $"Connection {connection} has successfully authenticated");
 
             await messageInfo.ReplyAsync((byte)MeaResponseType.Pong, new PingRequest { Message = "Success" });
             return true;
