@@ -1,5 +1,6 @@
 ﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
 using System;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 {
@@ -36,9 +37,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         /// <typeparam name="T">The object type of the <paramref name="message"/></typeparam>
         /// <param name="messageType">The type of the response</param>
         /// <param name="message">The message</param>
-        public void Reply<T>(MeaResponseType messageType, T message)
+        public async Task ReplyAsync<T>(MeaResponseType messageType, T message)
         {
-            _socket.WriteMessage(Id, (byte)messageType, message);
+            await _socket.WriteMessageAsync(Id, (byte)messageType, message);
         }
     }
 }

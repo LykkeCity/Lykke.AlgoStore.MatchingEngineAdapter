@@ -1,12 +1,13 @@
 ﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 {
     /// <summary>
     /// Represents a MEA communicator which handles lower-level message writing/reading to the adapter
     /// </summary>
-    public interface IMeaCommunicator
+    public interface IMeaCommunicator : IDisposable
     {
         /// <summary>
         /// Starts the MEA communicator
@@ -22,7 +23,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         /// <param name="messageId">The unique ID of the message</param>
         /// <param name="messageType">The type of them essage</param>
         /// <param name="message">The message to send</param>
-        void SendRequest<T>(uint messageId, byte messageType, T message);
+        Task SendRequestAsync<T>(uint messageId, byte messageType, T message);
 
         /// <summary>
         /// Event which is fired when the connection to the MEA is opened

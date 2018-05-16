@@ -20,7 +20,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         /// </summary>
         /// <param name="content">The message which the adapter will return</param>
         /// <returns>Task which will complete once the response is available</returns>
-        Task<string> Ping(string content);
+        Task<string> PingAsync(string content);
 
         /// <summary>
         /// Sends a market order request to the matching engine adapter
@@ -33,7 +33,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         /// <param name="instanceId">The algo instance Id</param>
         /// <param name="reservedLimitVolume">The reserved limit volume</param>
         /// <returns>A response model holding the market price</returns>
-        Task<ResponseModel<double>> PlaceMarketOrder(string walletId, string assetPairId, OrderAction orderAction, double volume,
-            bool isStraight, string instanceId, double? reservedLimitVolume = null);
+        Task<ResponseModel<double>> PlaceMarketOrderAsync(string walletId, string assetPairId, OrderAction orderAction,
+            double volume, bool isStraight, string instanceId, double? reservedLimitVolume = null);
     }
 }

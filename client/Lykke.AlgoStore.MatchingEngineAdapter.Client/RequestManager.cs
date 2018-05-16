@@ -2,17 +2,16 @@
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 {
     internal class RequestManager : IRequestManager
     {
         private readonly IMeaCommunicator _meaCommunicator;
-
-        private readonly ConcurrentDictionary<uint, object> _responses = new ConcurrentDictionary<uint, object>();
-        private readonly ConcurrentDictionary<uint, ManualResetEvent> _waitHandles = new ConcurrentDictionary<uint, ManualResetEvent>();
+        private readonly ConcurrentDictionary<uint, TaskCompletionSource<IMessageInfo>> 
+            _queuedMessages = new ConcurrentDictionary<uint, TaskCompletionSource<IMessageInfo>>();
 
         private string _clientId;
         private string _instanceId;
@@ -34,25 +33,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _meaCommunicator.Start();
         }
 
-        public (WaitHandle, uint) MakeRequest<T>(MeaRequestType requestType, T message)
+        public Task<IMessageInfo> MakeRequestAsync<T>(MeaRequestType requestType, T message)
         {
-            var manualResetEvent = new ManualResetEvent(false);
+            var taskCompletionSource = new TaskCompletionSource<IMessageInfo>();
             var nextRequestId = GetNextRequestId();
 
-            _waitHandles.TryAdd(nextRequestId, manualResetEvent);
-            _meaCommunicator.SendRequest(nextRequestId, (byte)requestType, message);
+            _queuedMessages.TryAdd(nextRequestId, taskCompletionSource);
+            // Wait here because otherwise we can't return the task from the completion source
+            _meaCommunicator.SendRequestAsync(nextRequestId, (byte)requestType, message).Wait();
 
-            return (manualResetEvent, nextRequestId);
-        }
-
-        public object GetResponse(uint requestId)
-        {
-            object response;
-
-            if (!_responses.TryRemove(requestId, out response))
-                throw new KeyNotFoundException($"A message with the ID {requestId} does not exist");
-
-            return response;
+            return taskCompletionSource.Task;
         }
 
         private void ProcessResponse(IMessageInfo messageInfo)
@@ -60,32 +50,27 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             if (messageInfo == null)
                 throw new ArgumentNullException(nameof(messageInfo));
 
-            if (!_waitHandles.ContainsKey(messageInfo.Id))
+            if (!_queuedMessages.ContainsKey(messageInfo.Id))
                 return;
 
-            ManualResetEvent manualResetEvent;
+            TaskCompletionSource<IMessageInfo> taskCompletionSource;
 
-            if (!_waitHandles.TryRemove(messageInfo.Id, out manualResetEvent))
+            if (!_queuedMessages.TryRemove(messageInfo.Id, out taskCompletionSource))
                 return;
 
-            _responses.TryAdd(messageInfo.Id, messageInfo.Message);
-            manualResetEvent.Set();
+            taskCompletionSource.SetResult(messageInfo);
         }
 
         private void SendAuthRequest()
         {
             var request = new PingRequest { Message = $"{_clientId}_{_instanceId}" };
 
-            (var waitHandle, var requestId) = MakeRequest(MeaRequestType.Ping, request);
+            var task = MakeRequestAsync(MeaRequestType.Ping, request);
 
-            ThreadPool.QueueUserWorkItem((state) =>
+            task.ContinueWith((t) =>
             {
-                waitHandle.WaitOne();
+                var response = t.Result.Message as PingRequest;
 
-                var response = GetResponse(requestId) as PingRequest;
-
-                // This will cause an unhandled exception and exit/crash the algo instance
-                // It is unlikely that an honest instance will get into a situation where it can't authenticate
                 if (response.Message == "Fail")
                     throw new UnauthorizedAccessException("Authorization with MEA failed");
             });

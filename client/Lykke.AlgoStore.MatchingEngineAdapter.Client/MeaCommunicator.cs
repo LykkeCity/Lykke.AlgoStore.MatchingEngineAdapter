@@ -8,6 +8,7 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 {
@@ -24,9 +25,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         private readonly ushort _port;
         private readonly ILog _log;
 
-        private Thread _workerThread;
+        private Task _workerTask;
         private CancellationTokenSource _cts;
         private IStreamWrapper _streamWrapper;
+        private bool _isDisposed;
 
         public event Action OnConnectionEstablished;
         public event Action<IMessageInfo> OnMessageReceived;
@@ -43,18 +45,39 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
         public void Start()
         {
-            if (_workerThread != null) return;
+            if (_workerTask != null) return;
 
             _cts = new CancellationTokenSource();
 
-            _workerThread = new Thread(AcceptMessages);
-            _workerThread.Start(_cts.Token);
+            _workerTask = AcceptMessages(_cts.Token);
         }
 
-        public void SendRequest<T>(uint messageId, byte messageType, T message)
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        public async Task SendRequestAsync<T>(uint messageId, byte messageType, T message)
         {
             EnsureConnected();
-            _streamWrapper.WriteMessage(messageId, messageType, message);
+            await _streamWrapper.WriteMessageAsync(messageId, messageType, message);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_isDisposed) return;
+
+            if (!disposing) return;
+
+            _cts?.Cancel();
+            _tcpClient?.Dispose();
+            _streamWrapper?.Dispose();
+
+            _workerTask?.Wait();
+
+            _cts?.Dispose();
+
+            _isDisposed = true;
         }
 
         private void EnsureConnected()
@@ -66,27 +89,26 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipAddress, _port);
             var networkStream = _tcpClient.GetStream();
-            _streamWrapper = new StreamWrapper(networkStream, _log, false, _defaultMessageTypeMap);
+            _streamWrapper = new StreamWrapper(networkStream, _log, new IPEndPoint(_ipAddress, _port),
+                                               false, _defaultMessageTypeMap);
 
             OnConnectionEstablished?.Invoke();
         }
 
-        private void AcceptMessages(object cancellationTokenObj)
+        private async Task AcceptMessages(CancellationToken cancellationToken)
         {
-            var cancellationToken = (CancellationToken)cancellationTokenObj;
-
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
                     EnsureConnected();
-                    var message = _streamWrapper.ReadMessage();
+                    var message = await _streamWrapper.ReadMessageAsync();
                     OnMessageReceived?.Invoke(message);
                 }
                 catch (Exception e)
                 {
-                    _log.WriteError(nameof(MeaCommunicator), nameof(AcceptMessages), e);
-                    Console.WriteLine(e);
+                    if(!cancellationToken.IsCancellationRequested)
+                        await _log.WriteErrorAsync(nameof(MeaCommunicator), nameof(AcceptMessages), e);
                 }
             }
         }
