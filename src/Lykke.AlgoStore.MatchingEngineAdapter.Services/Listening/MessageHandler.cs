@@ -1,6 +1,4 @@
-﻿using Common.Log;
-using JetBrains.Annotations;
-using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
+﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
@@ -19,20 +17,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     {
         private readonly Dictionary<Type, Func<IMessageInfo, Task>> _messageHandlers = new Dictionary<Type, Func<IMessageInfo, Task>>();
         private readonly IMatchingEngineAdapter _matchingEngineAdapter;
-        private readonly ILog _log;
 
         /// <summary>
         /// Initializes a <see cref="MessageHandler"/>
         /// </summary>
         /// <param name="matchingEngineAdapter">A <see cref="IMatchingEngineAdapter"/> to use for communication with the ME</param>
-        /// <param name="log">A <see cref="ILog"/> to use for logging</param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="requestQueue"/> or <paramref name="matchingEngineAdapter"/> is null
+        /// Thrown when <paramref name="matchingEngineAdapter"/> is null
         /// </exception>
-        public MessageHandler(IMatchingEngineAdapter matchingEngineAdapter, [NotNull] ILog log)
+        public MessageHandler(IMatchingEngineAdapter matchingEngineAdapter)
         {
-            _log = log ?? throw new ArgumentNullException(nameof(log));
-
             _matchingEngineAdapter =
                 matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
 

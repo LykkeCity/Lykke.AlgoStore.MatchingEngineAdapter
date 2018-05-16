@@ -95,8 +95,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     if (message == null)
                         break;
 
-                    var isAuthenticated = _connection.IsAuthenticated;
-
                     if (!await TryAuthenticate(_connection, message))
                     {
                         await message.ReplyAsync((byte)MeaResponseType.Pong, new PingRequest { Message = "Fail" });

@@ -76,6 +76,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _workerTask?.Wait();
 
             _cts?.Dispose();
+
+            _isDisposed = true;
         }
 
         private void EnsureConnected()

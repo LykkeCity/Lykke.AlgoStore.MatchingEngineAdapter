@@ -26,7 +26,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private readonly ConcurrentDictionary<string, byte> _connectionHashSet = new ConcurrentDictionary<string, byte>();
         private readonly HashSet<Task> _allWorkers = new HashSet<Task>();
 
-        private readonly IMatchingEngineAdapter _matchingEngineAdapter;
         private readonly IAlgoClientInstanceRepository _clientInstanceRepository;
         private readonly IMessageHandler _messageHandler;
         private readonly ILog _log;
@@ -42,13 +41,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Initializes a <see cref="ListeningService"/>
         /// </summary>
         public ListeningService(
-            IMatchingEngineAdapter matchingEngineAdapter,
             IAlgoClientInstanceRepository clientInstanceRepository,
             IMessageHandler messageHandler,
             [NotNull] ILog log,
             ushort port)
         {
-            _matchingEngineAdapter = matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
             _clientInstanceRepository = clientInstanceRepository ?? throw new ArgumentNullException(nameof(clientInstanceRepository));
             _messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
             _log = log ?? throw new ArgumentNullException(nameof(log));
