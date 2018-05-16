@@ -32,10 +32,15 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// <summary>
         /// Initializes a new instance of <see cref="ConnectionWorker"/>
         /// </summary>
+        /// <param name="connection">The connection this worker will be working on</param>
+        /// <param name="messageHandler">The message handler which will take care of handling incoming messages</param>
         /// <param name="algoClientInstanceRepository">The <see cref="IAlgoClientInstanceRepository"/> to use for validating connections</param>
+        /// <param name="log">The logger to use for logging</param>
+        /// <param name="authenticationCallback">Callback to do extra authentication checks based on the sent ID</param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="requestQueue"/>, <paramref name="algoClientInstanceRepository"/>
-        /// or <paramref name="log"/> are null
+        /// Thrown when <paramref name="connection"/>, <paramref name="messageHandler"/>,
+        /// <paramref name="algoClientInstanceRepository"/>, <paramref name="log"/>
+        /// or <paramref name="authenticationCallback"/> are null
         /// </exception>
         public ConnectionWorker(
             IStreamWrapper connection,

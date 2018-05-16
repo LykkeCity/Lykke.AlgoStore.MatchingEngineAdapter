@@ -22,12 +22,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private readonly ILog _log;
 
         /// <summary>
-        /// Initializes a <see cref="MessageHandler"/> using a given <see cref="IMessageQueue"/> to process messages from
+        /// Initializes a <see cref="MessageHandler"/>
         /// </summary>
-        /// <param name="requestQueue">A <see cref="IMessageQueue"/></param>
-        /// <param name="matchingEngineAdapter">A <see cref="IMatchingEngineAdapter"/></param>
-        /// <param name="log">A <see cref="ILog"/></param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestQueue"/> is null</exception>
+        /// <param name="matchingEngineAdapter">A <see cref="IMatchingEngineAdapter"/> to use for communication with the ME</param>
+        /// <param name="log">A <see cref="ILog"/> to use for logging</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="requestQueue"/> or <paramref name="matchingEngineAdapter"/> is null
+        /// </exception>
         public MessageHandler(IMatchingEngineAdapter matchingEngineAdapter, [NotNull] ILog log)
         {
             _log = log ?? throw new ArgumentNullException(nameof(log));
@@ -51,7 +52,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// Handles a <see cref="PingRequest"/> by replying with <see cref="MeaResponseType.Pong"/> containing
         /// the same message
         /// </summary>
-        /// <param name="request">The <see cref="MessageInfo"/> containing the message</param>
+        /// <param name="request">The <see cref="IMessageInfo"/> containing the message</param>
         private async Task PingHandler(IMessageInfo request)
         {
             var msg = (PingRequest)request.Message;
@@ -59,12 +60,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             await request.ReplyAsync(MeaResponseType.Pong, msg);
         }
 
-
         /// <summary>
         /// Handles a <see cref="MarketOrderRequest"/> by replying with <see cref="ResponseModel{T}"/> containing
         /// the response message />
         /// </summary>
-        /// <param name="request">The <see cref="MessageInfo"/> containing the message</param>
+        /// <param name="request">The <see cref="MIessageInfo"/> containing the message</param>
         private async Task MarketOrderRequestHandler(IMessageInfo request)
         {
             var msg = (MarketOrderRequest)request.Message;
