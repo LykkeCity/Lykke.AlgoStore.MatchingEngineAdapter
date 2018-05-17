@@ -117,7 +117,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 await _log.WriteInfoAsync(nameof(ListeningService), nameof(AcceptConnections),
                     $"Accepting incoming connection from {socket.RemoteEndPoint}");
 
-                var networkStream = new NetworkStream(socket);
+                var networkStream = new NetworkStream(socket, true);
                 var streamWrapper = new StreamWrapper(networkStream, _log, socket.RemoteEndPoint, true);
 
                 var connectionWorker = new ConnectionWorker(streamWrapper, 
