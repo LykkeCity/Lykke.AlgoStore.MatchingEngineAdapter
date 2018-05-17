@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
@@ -25,6 +26,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         private readonly Dictionary<byte, Type> _messageTypeMap;
         private readonly ILog _log;
         private readonly EndPoint _remoteEndPoint;
+        private readonly CancellationTokenSource _cts;
 
         private bool _isDisposed;
 
@@ -83,8 +85,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
             AuthenticationEnabled = useAuthentication;
 
-            if(useAuthentication)
+            if (useAuthentication)
+            {
+                _cts = new CancellationTokenSource();
                 EnsureAuthenticatedAsync();
+            }
         }
 
         /// <summary>
@@ -206,6 +211,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             {
                 _stream.Close();
                 _stream.Dispose();
+
+                _cts?.Cancel();
+                _cts?.Dispose();
             }
 
             _isDisposed = true;
@@ -213,7 +221,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
 
         private async void EnsureAuthenticatedAsync()
         {
-            await Task.Delay(10_000);
+            try
+            {
+                await Task.Delay(10_000, _cts.Token);
+            }
+            catch(TaskCanceledException)
+            {
+                return;
+            }
 
             if (_isDisposed) return;
 
