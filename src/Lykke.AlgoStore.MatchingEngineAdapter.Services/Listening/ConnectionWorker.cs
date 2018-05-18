@@ -27,6 +27,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         private readonly TaskCompletionSource<IMessageInfo> _abortReadSource = new TaskCompletionSource<IMessageInfo>();
 
         private readonly Func<string, Task<bool>> _authenticationCallback;
+
+        private CancellationTokenRegistration _ctr;
         private bool _isDisposed;
 
         /// <summary>
@@ -56,12 +58,18 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             _authenticationCallback = authenticationCallback ?? throw new ArgumentNullException(nameof(authenticationCallback));
         }
 
+        ~ConnectionWorker()
+        {
+            Dispose(false);
+        }
+
         /// <summary>
         /// Disposes this <see cref="ConnectionWorker"/> and closes all of the connections it handles
         /// </summary>
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool isDisposing)
@@ -73,6 +81,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 _connection.Dispose();
             }
 
+            _ctr.Dispose();
+
             _isDisposed = true;
         }
 
@@ -81,7 +91,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         public async Task AcceptMessagesAsync(CancellationToken cancellationToken)
         {
-            cancellationToken.Register(() => _abortReadSource.SetResult(null));
+            _ctr = cancellationToken.Register(() => _abortReadSource.SetResult(null));
 
             try
             {
