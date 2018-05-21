@@ -131,7 +131,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
                 //Let us start our listener here
                 var listeningService = ApplicationContainer.Resolve<IListeningService>();
-                listeningService.Start();
+                var listeningServiceTask = listeningService.Start();
+
+                // Intentionally disabled unawaited task warning here
+#pragma warning disable 4014
+                listeningServiceTask.ContinueWith((task) =>
+                {
+                    if (task.IsFaulted)
+                        Log.WriteFatalError("", nameof(listeningService), task.Exception);
+                });
+#pragma warning restore 4014
 
                 await Log.WriteMonitorAsync("", $"{nameof(listeningService)}", "Started");
             }
