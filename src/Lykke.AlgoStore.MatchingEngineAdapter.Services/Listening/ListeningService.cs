@@ -24,7 +24,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         // We use Dictionary here because there's no concurrent hashset in .NET. The value is not used
         // and will be set to 0 for every connection
         private readonly ConcurrentDictionary<string, byte> _connectionHashSet = new ConcurrentDictionary<string, byte>();
-        private readonly HashSet<Task> _allWorkers = new HashSet<Task>();
+        private readonly ConcurrentDictionary<Task, byte> _allWorkers = new ConcurrentDictionary<Task, byte>();
 
         private readonly IAlgoClientInstanceRepository _clientInstanceRepository;
         private readonly IMessageHandler _messageHandler;
@@ -92,7 +92,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 _listener.Server.Close();
                 _listener.Server.Dispose();
 
-                var allConnections = _allWorkers.ToArray();
+                var allConnections = _allWorkers.Keys.ToArray();
 
                 _cts.Cancel();
 
@@ -135,13 +135,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                             task.Exception);
                     }
 
-                    _allWorkers.Remove(task);
+                    _allWorkers.TryRemove(task, out byte unused);
                     if(!string.IsNullOrEmpty(streamWrapper.ID))
-                        _connectionHashSet.Remove(streamWrapper.ID, out byte unused);
+                        _connectionHashSet.Remove(streamWrapper.ID, out unused);
                 });
 #pragma warning restore 4014
 
-                _allWorkers.Add(workerTask);
+                _allWorkers.TryAdd(workerTask, 0);
             }
         }
 
