@@ -59,6 +59,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         public async Task Start()
         {
             _listener = new TcpListener(IPAddress.Any, _port);
+            _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             _listener.Start();
 
             await AcceptConnections();
