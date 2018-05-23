@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
 {
@@ -13,14 +14,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
         public string Host { get; set; }
         public int Port { get; set; }
 
-        public IPEndPoint GetClientIpEndPoint(bool useInternal = false)
+        public async Task<IPEndPoint> GetClientIpEndPoint(bool useInternal = false)
         {
             string host = useInternal ? InternalHost : Host;
 
             if (IPAddress.TryParse(host, out var ipAddress))
                 return new IPEndPoint(ipAddress, Port);
 
-            var addresses = Dns.GetHostAddressesAsync(host).Result;
+            var addresses = await Dns.GetHostAddressesAsync(host);
             return new IPEndPoint(addresses[0], Port);
         }
     }

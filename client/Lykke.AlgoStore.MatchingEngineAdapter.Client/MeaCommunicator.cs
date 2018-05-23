@@ -86,8 +86,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
             _log.WriteInfo(nameof(MeaCommunicator), nameof(EnsureConnected), "Connecting to MEA...");
 
+            _tcpClient?.Dispose();
+
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipAddress, _port);
+
             var networkStream = _tcpClient.GetStream();
             _streamWrapper = new StreamWrapper(networkStream, _log, new IPEndPoint(_ipAddress, _port),
                                                false, _defaultMessageTypeMap);
