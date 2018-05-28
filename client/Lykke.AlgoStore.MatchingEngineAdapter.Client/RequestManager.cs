@@ -1,4 +1,5 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
+﻿using Common;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System;
 using System.Collections.Concurrent;
@@ -10,8 +11,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
     internal class RequestManager : IRequestManager
     {
         private readonly IMeaCommunicator _meaCommunicator;
-        private readonly ConcurrentDictionary<uint, TaskCompletionSource<IMessageInfo>> 
-            _queuedMessages = new ConcurrentDictionary<uint, TaskCompletionSource<IMessageInfo>>();
+        private readonly TasksManager<IMessageInfo> _taskManager = new TasksManager<IMessageInfo>();
 
         private string _clientId;
         private string _instanceId;
@@ -33,16 +33,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _meaCommunicator.Start();
         }
 
-        public Task<IMessageInfo> MakeRequestAsync<T>(MeaRequestType requestType, T message)
+        public async Task<Task<IMessageInfo>> MakeRequestAsync<T>(MeaRequestType requestType, T message)
         {
-            var taskCompletionSource = new TaskCompletionSource<IMessageInfo>();
             var nextRequestId = GetNextRequestId();
+            var task = _taskManager.Add(nextRequestId);
 
-            _queuedMessages.TryAdd(nextRequestId, taskCompletionSource);
-            // Wait here because otherwise we can't return the task from the completion source
-            _meaCommunicator.SendRequestAsync(nextRequestId, (byte)requestType, message).Wait();
+            await _meaCommunicator.SendRequestAsync(nextRequestId, (byte)requestType, message);
 
-            return taskCompletionSource.Task;
+            return task;
         }
 
         private void ProcessResponse(IMessageInfo messageInfo)
@@ -50,15 +48,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             if (messageInfo == null)
                 throw new ArgumentNullException(nameof(messageInfo));
 
-            if (!_queuedMessages.ContainsKey(messageInfo.Id))
-                return;
-
-            TaskCompletionSource<IMessageInfo> taskCompletionSource;
-
-            if (!_queuedMessages.TryRemove(messageInfo.Id, out taskCompletionSource))
-                return;
-
-            taskCompletionSource.SetResult(messageInfo);
+            _taskManager.SetResult(messageInfo.Id, messageInfo);
         }
 
         private void SendAuthRequest()
@@ -69,10 +59,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
             task.ContinueWith((t) =>
             {
-                var response = t.Result.Message as PingRequest;
+                t.Result.ContinueWith((inner) =>
+                {
+                    var response = inner.Result.Message as PingRequest;
 
-                if (response.Message == "Fail")
-                    throw new UnauthorizedAccessException("Authorization with MEA failed");
+                    if (response.Message == "Fail")
+                        throw new UnauthorizedAccessException("Authorization with MEA failed");
+                });
             });
         }
 

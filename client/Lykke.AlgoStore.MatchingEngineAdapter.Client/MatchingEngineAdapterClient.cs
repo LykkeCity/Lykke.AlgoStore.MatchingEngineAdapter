@@ -29,7 +29,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             await _log.WriteInfoAsync(nameof(MatchingEngineAdapterClient), nameof(PingAsync),
                            $"Sending MEA Ping request with content {content}");
 
-            var message = await _requestManager.MakeRequestAsync(MeaRequestType.Ping, pingRequest);
+            var message = await await _requestManager.MakeRequestAsync(MeaRequestType.Ping, pingRequest);
 
             var response = message.Message as PingRequest;
 
@@ -52,7 +52,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             await _log.WriteInfoAsync(nameof(MatchingEngineAdapterClient), nameof(PlaceMarketOrderAsync),
                 $"Sending MEA market order request for algo instance with Id {instanceId}");
 
-            var message = await _requestManager.MakeRequestAsync(MeaRequestType.MarketOrderRequest, marketOrderRequest);
+            var message = await await _requestManager.MakeRequestAsync(MeaRequestType.MarketOrderRequest, marketOrderRequest);
 
             var response = message.Message as ResponseModel<double>;
 
