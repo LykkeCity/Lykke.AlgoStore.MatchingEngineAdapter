@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Lykke.SettingsReader.Attributes;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
@@ -10,7 +11,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
 
     public class IpEndpointSettings
     {
+        [TcpCheck("Port")]
         public string InternalHost { get; set; }
+        [TcpCheck("Port")]
         public string Host { get; set; }
         public int Port { get; set; }
 
