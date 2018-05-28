@@ -113,7 +113,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         {
             while (true)
             {
-                var socket = await _listener.AcceptSocketAsync();
+                Socket socket;
+
+                try
+                {
+                    socket = await _listener.AcceptSocketAsync();
+                }
+                catch(ObjectDisposedException) // The listening service has been disposed
+                {
+                    return;
+                }
 
                 await _log.WriteInfoAsync(nameof(ListeningService), nameof(AcceptConnections),
                     $"Accepting incoming connection from {socket.RemoteEndPoint}");
