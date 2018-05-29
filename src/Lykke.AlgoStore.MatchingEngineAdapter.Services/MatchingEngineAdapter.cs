@@ -9,6 +9,7 @@ using Lykke.Service.Assets.Client;
 using Lykke.Service.FeeCalculator.Client;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using FeeType = Lykke.Service.FeeCalculator.AutorestClient.Models.FeeType;
 using OrderAction = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.OrderAction;
@@ -82,14 +83,26 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
                 Fees = new[] { await GetMarketOrderFee(clientId, assetPairId, orderAction) }
             };
 
-            var response = await _matchingEngineClient.HandleMarketOrderAsync(order);
-            await CheckResponseAndThrowIfNull(response);
-            if (response.Status == MeStatusCodes.Ok)
+            using (var cts = new CancellationTokenSource(10_000))
             {
-                SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, response.Price, instanceId);
-                return ResponseModel<double>.CreateOk(response.Price);
+                MarketOrderResponse response = null;
+
+                try
+                {
+                    response = await _matchingEngineClient.HandleMarketOrderAsync(order, cts.Token);
+                }
+                catch(OperationCanceledException)
+                { // Empty block, will throw on the check below
+                }
+
+                await CheckResponseAndThrowIfNull(response);
+                if (response.Status == MeStatusCodes.Ok)
+                {
+                    await SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, response.Price, instanceId);
+                    return ResponseModel<double>.CreateOk(response.Price);
+                }
+                return ConvertToApiModel<double>(response.Status);
             }
-            return ConvertToApiModel<double>(response.Status);
         }
 
 
