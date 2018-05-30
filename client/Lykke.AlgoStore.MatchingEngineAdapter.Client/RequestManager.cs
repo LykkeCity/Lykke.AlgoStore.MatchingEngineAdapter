@@ -2,7 +2,6 @@
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System;
-using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,14 +32,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _meaCommunicator.Start();
         }
 
-        public async Task<Task<IMessageInfo>> MakeRequestAsync<T>(MeaRequestType requestType, T message)
+        public async Task<IMessageInfo> MakeRequestAsync<T>(MeaRequestType requestType, T message)
         {
             var nextRequestId = GetNextRequestId();
             var task = _taskManager.Add(nextRequestId);
 
             await _meaCommunicator.SendRequestAsync(nextRequestId, (byte)requestType, message);
 
-            return task;
+            return await task;
         }
 
         private void ProcessResponse(IMessageInfo messageInfo)
@@ -59,13 +58,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
             task.ContinueWith((t) =>
             {
-                t.Result.ContinueWith((inner) =>
-                {
-                    var response = inner.Result.Message as PingRequest;
+                var response = t.Result.Message as PingRequest;
 
-                    if (response.Message == "Fail")
-                        throw new UnauthorizedAccessException("Authorization with MEA failed");
-                });
+                if (response.Message == "Fail")
+                    throw new UnauthorizedAccessException("Authorization with MEA failed");
             });
         }
 

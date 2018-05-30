@@ -25,6 +25,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         /// <returns>
         /// A task which when completed will contain the response
         /// </returns>
-        Task<Task<IMessageInfo>> MakeRequestAsync<T>(MeaRequestType requestType, T message);
+        Task<IMessageInfo> MakeRequestAsync<T>(MeaRequestType requestType, T message);
     }
 }
