@@ -17,6 +17,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         // and in this case we want to start it manually
 
         /// <summary>
+        /// Stops the MEA communicator
+        /// </summary>
+        Task Stop();
+
+        /// <summary>
         /// Sends a request to the MEA
         /// </summary>
         /// <typeparam name="T">The object type of the message</typeparam>
