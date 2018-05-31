@@ -17,6 +17,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
         private int _currentRequestId = -1;
 
+        private bool _authorizationFailed;
+
         public RequestManager(IMeaCommunicator meaCommunicator)
         {
             _meaCommunicator = meaCommunicator ?? throw new ArgumentNullException(nameof(meaCommunicator));
@@ -29,11 +31,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _clientId = clientId;
             _instanceId = instanceId;
 
+            _authorizationFailed = false;
+
             _meaCommunicator.Start();
         }
 
         public async Task<IMessageInfo> MakeRequestAsync<T>(MeaRequestType requestType, T message)
         {
+            if (_authorizationFailed)
+                throw new UnauthorizedAccessException("Authorization with MEA failed");
+
             var nextRequestId = GetNextRequestId();
             var task = _taskManager.Add(nextRequestId);
 
@@ -44,25 +51,21 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
         private void ProcessResponse(IMessageInfo messageInfo)
         {
-            if (messageInfo == null)
-                throw new ArgumentNullException(nameof(messageInfo));
-
             _taskManager.SetResult(messageInfo.Id, messageInfo);
         }
 
-        private void SendAuthRequest()
+        private async void SendAuthRequest()
         {
             var request = new PingRequest { Message = $"{_clientId}_{_instanceId}" };
 
-            var task = MakeRequestAsync(MeaRequestType.Ping, request);
+            var response = (await MakeRequestAsync(MeaRequestType.Ping, request)).Message as PingRequest;
 
-            task.ContinueWith((t) =>
+            if (response.Message == "Fail")
             {
-                var response = t.Result.Message as PingRequest;
-
-                if (response.Message == "Fail")
-                    throw new UnauthorizedAccessException("Authorization with MEA failed");
-            });
+                _authorizationFailed = true;
+                await _meaCommunicator.Stop();
+                _taskManager.CancelAll();
+            }
         }
 
         private uint GetNextRequestId()
