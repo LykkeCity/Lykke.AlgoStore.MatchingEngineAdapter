@@ -52,6 +52,20 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _workerTask = AcceptMessages(_cts.Token);
         }
 
+        public async Task Stop()
+        {
+            if (_workerTask == null) return;
+
+            _cts.Cancel();
+            _tcpClient.Dispose();
+            _streamWrapper.Dispose();
+
+            await _workerTask;
+
+            _cts.Dispose();
+            _workerTask = null;
+        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -69,13 +83,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
             if (!disposing) return;
 
-            _cts?.Cancel();
-            _tcpClient?.Dispose();
-            _streamWrapper?.Dispose();
-
-            _workerTask?.Wait();
-
-            _cts?.Dispose();
+            Stop().Wait();
 
             _isDisposed = true;
         }
