@@ -79,7 +79,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
             Dictionary<byte, Type> messageTypeMap)
         {
             _stream = stream ?? throw new ArgumentNullException(nameof(stream));
-            _log = log ?? throw new ArgumentNullException(nameof(_log));
+            _log = log ?? throw new ArgumentNullException(nameof(log));
             _messageTypeMap = messageTypeMap ?? _defaultMessageTypeMap;
             _remoteEndPoint = remoteEndPoint ?? throw new ArgumentNullException(nameof(remoteEndPoint));
 

@@ -1,4 +1,5 @@
 ﻿using Common;
+using Common.Log;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System;
@@ -10,6 +11,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
     internal class RequestManager : IRequestManager
     {
         private readonly IMeaCommunicator _meaCommunicator;
+        private readonly ILog _log;
         private readonly TasksManager<IMessageInfo> _taskManager = new TasksManager<IMessageInfo>();
 
         private string _clientId;
@@ -19,9 +21,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
         private bool _authorizationFailed;
 
-        public RequestManager(IMeaCommunicator meaCommunicator)
+        public RequestManager(IMeaCommunicator meaCommunicator, ILog log)
         {
             _meaCommunicator = meaCommunicator ?? throw new ArgumentNullException(nameof(meaCommunicator));
+            _log = log ?? throw new ArgumentNullException(nameof(log));
             _meaCommunicator.OnMessageReceived += ProcessResponse;
             _meaCommunicator.OnConnectionEstablished += SendAuthRequest;
         }
@@ -58,7 +61,26 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         {
             var request = new PingRequest { Message = $"{_clientId}_{_instanceId}" };
 
-            var response = (await MakeRequestAsync(MeaRequestType.Ping, request)).Message as PingRequest;
+            PingRequest response;
+
+            try
+            {
+                var messageInfo = await MakeRequestAsync(MeaRequestType.Ping, request);
+                response = messageInfo.Message as PingRequest;
+
+                // Unlikely to happen, but if for some reason the MEA returns a different message,
+                // return from this method
+                if (response == null)
+                    return;
+            }
+            catch(Exception e)
+            {
+                // Cases when MakeRequestAsync can throw should be only network failures,
+                // in which case the connection will be retried anyway, but catch and log
+                // all exceptions in case something unexpected comes up
+                await _log.WriteErrorAsync(nameof(RequestManager), nameof(SendAuthRequest), e);
+                return;
+            }
 
             if (response.Message == "Fail")
             {
