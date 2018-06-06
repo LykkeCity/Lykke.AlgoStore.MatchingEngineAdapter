@@ -116,6 +116,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
                     var message = await _streamWrapper.ReadMessageAsync();
                     OnMessageReceived?.Invoke(message);
                 }
+                catch (System.IO.IOException)
+                {
+                    _streamWrapper?.Dispose();
+                    _tcpClient?.Close();
+                    _tcpClient?.Dispose();
+                }
                 catch (Exception e)
                 {
                     if(!cancellationToken.IsCancellationRequested)

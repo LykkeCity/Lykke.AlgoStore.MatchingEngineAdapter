@@ -172,23 +172,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 return false;
             }
 
-            var splitString = pingRequest.Message.Split('_', StringSplitOptions.RemoveEmptyEntries);
-
-            if (splitString.Length != 2)
+            if (!await _algoClientInstanceRepository.ExistsAlgoInstanceDataWithAuthTokenAsync(pingRequest.Message))
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
-                    $"Connection {connection} sent invalid format {nameof(PingRequest)}, dropping connection!");
+                    $"Connection {connection} sent {nameof(PingRequest)} containing unknown auth token, dropping connection!");
                 return false;
             }
 
-            if (!_algoClientInstanceRepository.ExistsAlgoInstanceDataWithClientIdAsync(splitString[0], splitString[1]).Result)
-            {
-                await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
-                    $"Connection {connection} sent {nameof(PingRequest)} containing unknown client ID/instance ID combination, dropping connection!");
-                return false;
-            }
-
-            if((await _algoClientInstanceRepository.GetAlgoInstanceDataByClientIdAsync(splitString[0], splitString[1]))
+            if((await _algoClientInstanceRepository.GetAlgoInstanceDataByAuthTokenAsync(pingRequest.Message))
                 .AlgoInstanceStatus != AlgoInstanceStatus.Started)
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
