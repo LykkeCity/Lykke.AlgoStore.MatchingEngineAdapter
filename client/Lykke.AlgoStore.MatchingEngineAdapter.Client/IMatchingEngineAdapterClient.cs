@@ -9,11 +9,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
     public interface IMatchingEngineAdapterClient
     {
         /// <summary>
-        /// Sets the current instance ID and client ID
+        /// Sets the current instance authentication token
         /// </summary>
-        /// <param name="clientId">The client ID of the algo instance</param>
-        /// <param name="instanceId">The ID of the algo instance</param>
-        void SetClientAndInstanceId(string clientId, string instanceId);
+        /// <param name="authToken">The auth token of the algo instance</param>
+        void SetAuthToken(string authToken);
 
         /// <summary>
         /// Sends a ping request to the matching engine adapter

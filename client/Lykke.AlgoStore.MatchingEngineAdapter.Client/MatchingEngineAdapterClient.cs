@@ -17,9 +17,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
-        public void SetClientAndInstanceId(string clientId, string instanceId)
+        public void SetAuthToken(string authToken)
         {
-            _requestManager.SetClientAndInstanceId(clientId, instanceId);
+            _requestManager.SetAuthToken(authToken);
         }
 
         public async Task<string> PingAsync(string content)
