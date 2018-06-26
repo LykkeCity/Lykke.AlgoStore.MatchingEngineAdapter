@@ -157,7 +157,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             if (!connection.AuthenticationEnabled || connection.IsAuthenticated) return true;
 
             var pingRequest = messageInfo.Message as PingRequest;
-
+            
             if (pingRequest == null)
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),

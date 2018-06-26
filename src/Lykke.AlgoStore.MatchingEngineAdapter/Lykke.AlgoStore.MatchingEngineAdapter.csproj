@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Lykke.AlgoStore.Job.Stopping.Client" Version="1.0.4" />
     <PackageReference Include="Lykke.Common.ApiLibrary" Version="1.7.0" />
     <PackageReference Include="Lykke.Logs" Version="4.3.0" />
     <PackageReference Include="Lykke.MatchingEngineConnector" Version="4.1.1" />
