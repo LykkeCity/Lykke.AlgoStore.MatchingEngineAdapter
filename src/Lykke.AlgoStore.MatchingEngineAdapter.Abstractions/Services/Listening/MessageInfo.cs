@@ -22,6 +22,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         public object Message { get; set; }
 
         /// <summary>
+        /// The authentucation token which came with the request
+        /// </summary>
+        public string AuthToken { get; set; }
+
+        /// <summary>
         /// Initializes a <see cref="MessageInfo"/> using a given <see cref="IStreamWrapper"/>
         /// </summary>
         /// <param name="socket">A <see cref="IStreamWrapper"/> to use for replying with messages</param>
@@ -29,6 +34,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         public MessageInfo(IStreamWrapper socket)
         {
             _socket = socket ?? throw new ArgumentNullException(nameof(socket));
+            AuthToken = socket.ID;
         }
 
         /// <summary>
