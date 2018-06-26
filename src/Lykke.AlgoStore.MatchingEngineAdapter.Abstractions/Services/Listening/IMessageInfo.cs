@@ -9,6 +9,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         uint Id { get; set; }
         object Message { get; set; }
 
+        string AuthToken { get; set; }
+
         Task ReplyAsync<T>(MeaResponseType responseType, T message);
     }
 }
