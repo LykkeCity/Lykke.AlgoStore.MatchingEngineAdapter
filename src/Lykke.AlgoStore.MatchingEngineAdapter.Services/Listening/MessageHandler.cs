@@ -6,6 +6,9 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
+using Lykke.AlgoStore.Job.Stopping.Client;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
 using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests.MarketOrderRequest;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
@@ -17,21 +20,24 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
     {
         private readonly Dictionary<Type, Func<IMessageInfo, Task>> _messageHandlers = new Dictionary<Type, Func<IMessageInfo, Task>>();
         private readonly IMatchingEngineAdapter _matchingEngineAdapter;
+        private readonly IAlgoInstanceStoppingClient _algoInstanceStoppingClient;
 
         /// <summary>
         /// Initializes a <see cref="MessageHandler"/>
         /// </summary>
         /// <param name="matchingEngineAdapter">A <see cref="IMatchingEngineAdapter"/> to use for communication with the ME</param>
+        /// <param name="algoInstanceStoppingClient">A<see cref="IAlgoInstanceStoppingClient"/> to call AlgoStore stopping service</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="matchingEngineAdapter"/> is null
         /// </exception>
-        public MessageHandler(IMatchingEngineAdapter matchingEngineAdapter)
+        public MessageHandler(IMatchingEngineAdapter matchingEngineAdapter, IAlgoInstanceStoppingClient algoInstanceStoppingClient)
         {
             _matchingEngineAdapter =
                 matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
 
             _messageHandlers.Add(typeof(PingRequest), PingHandler);
             _messageHandlers.Add(typeof(MarketOrderRequest), MarketOrderRequestHandler);
+            _algoInstanceStoppingClient = algoInstanceStoppingClient;
         }
 
         public async Task HandleMessage(IMessageInfo messageInfo)
@@ -67,6 +73,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 msg.Volume, msg.IsStraight, msg.InstanceId);
 
             await request.ReplyAsync(MeaResponseType.MarketOrderResponse, result);
+
+            if (result.Error != null && result.Error.Code == ResponseModel.ErrorCodeType.NotEnoughFunds)
+            {
+                await _algoInstanceStoppingClient.DeleteAlgoInstanceAsync(msg.InstanceId, request.AuthToken);
+            }
         }
     }
 }
