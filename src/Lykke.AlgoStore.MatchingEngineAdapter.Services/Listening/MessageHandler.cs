@@ -76,12 +76,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
             if (result.Error != null && result.Error.Code == ResponseModel.ErrorCodeType.NotEnoughFunds)
             {
-                var deleteResult = await _algoInstanceStoppingClient.DeleteAlgoInstanceAsync(msg.InstanceId, request.AuthToken);
-
-                if (!deleteResult.IsSuccessfulDeletion || !string.IsNullOrEmpty(deleteResult.ErrorMessage))
-                {
-
-                }
+                await _algoInstanceStoppingClient.DeleteAlgoInstanceAsync(msg.InstanceId, request.AuthToken);
             }
         }
     }
