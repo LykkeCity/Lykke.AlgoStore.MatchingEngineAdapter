@@ -152,12 +152,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             }
         }
 
-        private async Task<bool> CheckConnectionExists(string id)
+        private async Task<bool> CheckConnectionExists(IStreamWrapper connection, string id)
         {
             if (!_connectionHashSet.TryAdd(id, 0))
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(CheckConnectionExists),
-                    $"Connection sent token of an already existing connection, dropping new connection!");
+                    $"Connection {connection} sent token {id} of an already existing connection, dropping new connection!");
 
                 return false;
             }

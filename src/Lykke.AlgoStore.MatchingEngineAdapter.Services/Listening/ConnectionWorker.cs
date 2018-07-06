@@ -26,7 +26,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
         private readonly TaskCompletionSource<IMessageInfo> _abortReadSource = new TaskCompletionSource<IMessageInfo>();
 
-        private readonly Func<string, Task<bool>> _authenticationCallback;
+        private readonly Func<IStreamWrapper, string, Task<bool>> _authenticationCallback;
 
         private CancellationTokenRegistration _ctr;
         private bool _isDisposed;
@@ -49,7 +49,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             IMessageHandler messageHandler,
             IAlgoClientInstanceRepository algoClientInstanceRepository, 
             [NotNull] ILog log,
-            Func<string, Task<bool>> authenticationCallback)
+            Func<IStreamWrapper, string, Task<bool>> authenticationCallback)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
@@ -189,7 +189,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 return false;
             }
 
-            if (!await _authenticationCallback(pingRequest.Message))
+            if (!await _authenticationCallback(connection, pingRequest.Message))
                 return false;
 
             connection.ID = pingRequest.Message;
