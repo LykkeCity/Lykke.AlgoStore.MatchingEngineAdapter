@@ -220,7 +220,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
                             .Callback<IMessageInfo>((request) => request.ReplyAsync(MeaResponseType.Pong, request.Message).Wait());
 
             return new ConnectionWorker(streamWrapper, messageHandlerMock.Object, algoClientInstanceRepo, log,
-                (str) => Task.FromResult(shouldAuthenticate));
+                (conn, str) => Task.FromResult(shouldAuthenticate));
         }
     }
 }
