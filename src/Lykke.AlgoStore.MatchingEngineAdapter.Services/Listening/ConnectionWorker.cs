@@ -135,12 +135,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             switch(ex)
             {
                 case System.IO.IOException ioe:
-                    if (!_connection.IsAuthenticated)
+                    if (_connection.IsAuthenticated)
                         _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), $"Connection {_connection} was lost");
                     return true;
 
                 case ObjectDisposedException ode:
-                    if (!_connection.IsAuthenticated)
+                    if (_connection.IsAuthenticated)
                         _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), $"Connection {_connection} was dropped");
                     return true;
 
