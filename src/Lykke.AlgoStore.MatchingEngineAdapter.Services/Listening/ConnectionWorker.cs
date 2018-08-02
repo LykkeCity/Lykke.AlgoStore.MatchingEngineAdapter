@@ -26,7 +26,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
         private readonly TaskCompletionSource<IMessageInfo> _abortReadSource = new TaskCompletionSource<IMessageInfo>();
 
-        private readonly Func<string, Task<bool>> _authenticationCallback;
+        private readonly Func<IStreamWrapper, string, Task<bool>> _authenticationCallback;
 
         private CancellationTokenRegistration _ctr;
         private bool _isDisposed;
@@ -49,7 +49,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             IMessageHandler messageHandler,
             IAlgoClientInstanceRepository algoClientInstanceRepository, 
             [NotNull] ILog log,
-            Func<string, Task<bool>> authenticationCallback)
+            Func<IStreamWrapper, string, Task<bool>> authenticationCallback)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
@@ -135,11 +135,13 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             switch(ex)
             {
                 case System.IO.IOException ioe:
-                    _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), $"Connection {_connection} was lost");
+                    if (_connection.IsAuthenticated)
+                        _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), $"Connection {_connection} was lost");
                     return true;
 
                 case ObjectDisposedException ode:
-                    _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), $"Connection {_connection} was dropped");
+                    if (_connection.IsAuthenticated)
+                        _log.WriteInfo(nameof(ConnectionWorker), nameof(AcceptMessagesAsync), $"Connection {_connection} was dropped");
                     return true;
 
                 case System.IO.InvalidDataException ide:
@@ -157,7 +159,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             if (!connection.AuthenticationEnabled || connection.IsAuthenticated) return true;
 
             var pingRequest = messageInfo.Message as PingRequest;
-
+            
             if (pingRequest == null)
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
@@ -172,23 +174,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 return false;
             }
 
-            var splitString = pingRequest.Message.Split('_', StringSplitOptions.RemoveEmptyEntries);
-
-            if (splitString.Length != 2)
+            if (!await _algoClientInstanceRepository.ExistsAlgoInstanceDataWithAuthTokenAsync(pingRequest.Message))
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
-                    $"Connection {connection} sent invalid format {nameof(PingRequest)}, dropping connection!");
+                    $"Connection {connection} sent {nameof(PingRequest)} containing unknown auth token, dropping connection!");
                 return false;
             }
 
-            if (!_algoClientInstanceRepository.ExistsAlgoInstanceDataWithClientIdAsync(splitString[0], splitString[1]).Result)
-            {
-                await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
-                    $"Connection {connection} sent {nameof(PingRequest)} containing unknown client ID/instance ID combination, dropping connection!");
-                return false;
-            }
-
-            if((await _algoClientInstanceRepository.GetAlgoInstanceDataByClientIdAsync(splitString[0], splitString[1]))
+            if((await _algoClientInstanceRepository.GetAlgoInstanceDataByAuthTokenAsync(pingRequest.Message))
                 .AlgoInstanceStatus != AlgoInstanceStatus.Started)
             {
                 await _log.WriteWarningAsync(nameof(ConnectionWorker), nameof(TryAuthenticate),
@@ -196,7 +189,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                 return false;
             }
 
-            if (!await _authenticationCallback(pingRequest.Message))
+            if (!await _authenticationCallback(connection, pingRequest.Message))
                 return false;
 
             connection.ID = pingRequest.Message;

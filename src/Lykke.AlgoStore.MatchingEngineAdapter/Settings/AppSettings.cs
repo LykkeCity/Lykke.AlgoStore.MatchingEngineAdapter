@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using Lykke.AlgoStore.Job.Stopping.Client;
 using Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings;
 using Lykke.AlgoStore.MatchingEngineAdapter.Settings.SlackNotifications;
 
@@ -13,5 +14,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings
         public FeeCalculatorServiceClient FeeCalculatorServiceClient { get; set; }
         public AssetsServiceClient AssetsServiceClient { get; set; }
         public FeeSettings FeeSettings { get; set; }
+        public AlgoStoreStoppingClientSettings AlgoStoreStoppingClient { get; set; }
     }
 }

@@ -14,8 +14,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         private readonly ILog _log;
         private readonly TasksManager<IMessageInfo> _taskManager = new TasksManager<IMessageInfo>();
 
-        private string _clientId;
-        private string _instanceId;
+        private string _authToken;
 
         private int _currentRequestId = -1;
 
@@ -29,10 +28,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
             _meaCommunicator.OnConnectionEstablished += SendAuthRequest;
         }
 
-        public void SetClientAndInstanceId(string clientId, string instanceId)
+        public void SetAuthToken(string authToken)
         {
-            _clientId = clientId;
-            _instanceId = instanceId;
+            _authToken = authToken;
 
             _authorizationFailed = false;
 
@@ -59,7 +57,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 
         private async void SendAuthRequest()
         {
-            var request = new PingRequest { Message = $"{_clientId}_{_instanceId}" };
+            var request = new PingRequest { Message = $"{_authToken}" };
 
             PingRequest response;
 

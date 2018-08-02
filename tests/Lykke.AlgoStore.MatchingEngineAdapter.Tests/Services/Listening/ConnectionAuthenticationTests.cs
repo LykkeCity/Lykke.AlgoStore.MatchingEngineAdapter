@@ -9,8 +9,6 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
 using Moq;
 using NUnit.Framework;
-using System;
-using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests.MarketOrderRequest;
@@ -46,7 +44,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         public void ProducingWorker_ClosesConnection_WhenUnknownGuidsSent()
         {
             AssertRequestDisconnects(
-                new PingRequest { Message = $"{UNKNOWN_GUID_PLACEHOLDER}_{UNKNOWN_GUID_PLACEHOLDER}" },
+                new PingRequest { Message = $"{UNKNOWN_GUID_PLACEHOLDER}" },
                 (byte)MeaRequestType.Ping);
         }
 
@@ -54,14 +52,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         public void ProducingWorker_ClosesConnection_WhenAlgoInstanceNotStarted()
         {
             AssertRequestDisconnects(
-                new PingRequest { Message = $"{KNOWN_GUID_PLACEHOLDER}_{KNOWN_GUID_PLACEHOLDER}" },
+                new PingRequest { Message = $"{KNOWN_GUID_PLACEHOLDER}" },
                 (byte)MeaRequestType.Ping);
         }
 
         [Test]
         public void ProducingWorker_ClosesConnection_WhenDuplicateConnection()
         {
-            var request = new PingRequest { Message = $"{STARTED_GUID_PLACEHOLDER}_{STARTED_GUID_PLACEHOLDER}" };
+            var request = new PingRequest { Message = $"{STARTED_GUID_PLACEHOLDER}" };
 
             var log = Given_Correct_Log();
 
@@ -81,7 +79,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         { 
             var log = Given_Correct_Log();
 
-            var request = new PingRequest { Message = $"{STARTED_GUID_PLACEHOLDER}_{STARTED_GUID_PLACEHOLDER}" };
+            var request = new PingRequest { Message = $"{STARTED_GUID_PLACEHOLDER}" };
             var messageInfoMock = Given_Verifiable_MessageInfoMock(request, false);
             var streamWrapperMock = Given_Verifiable_StreamWrapperMock(messageInfoMock.Object, false);
 
@@ -185,26 +183,26 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             var algoClientInstanceRepoMock = new Mock<IAlgoClientInstanceRepository>();
 
             algoClientInstanceRepoMock
-                .Setup(repo => repo.ExistsAlgoInstanceDataWithClientIdAsync(It.IsAny<string>(), It.IsAny<string>()))
-                .ReturnsAsync((string clientId, string instanceId) => 
+                .Setup(repo => repo.ExistsAlgoInstanceDataWithAuthTokenAsync(It.IsAny<string>()))
+                .ReturnsAsync((string authToken) => 
                 {
-                    if (clientId == UNKNOWN_GUID_PLACEHOLDER && instanceId == UNKNOWN_GUID_PLACEHOLDER)
+                    if (authToken == UNKNOWN_GUID_PLACEHOLDER)
                         return false;
-                    else if (clientId == KNOWN_GUID_PLACEHOLDER && instanceId == KNOWN_GUID_PLACEHOLDER)
+                    else if (authToken == KNOWN_GUID_PLACEHOLDER)
                         return true;
-                    else if (clientId == STARTED_GUID_PLACEHOLDER && instanceId == STARTED_GUID_PLACEHOLDER)
+                    else if (authToken == STARTED_GUID_PLACEHOLDER)
                         return true;
 
                     return false;
                 });
 
             algoClientInstanceRepoMock
-                .Setup(repo => repo.GetAlgoInstanceDataByClientIdAsync(It.IsAny<string>(), It.IsAny<string>()))
-                .ReturnsAsync((string clientId, string instanceId) =>
+                .Setup(repo => repo.GetAlgoInstanceDataByAuthTokenAsync(It.IsAny<string>()))
+                .ReturnsAsync((string authToken) =>
                 {
-                    if (clientId == KNOWN_GUID_PLACEHOLDER && instanceId == KNOWN_GUID_PLACEHOLDER)
+                    if (authToken == KNOWN_GUID_PLACEHOLDER)
                         return new AlgoClientInstanceData { AlgoInstanceStatus = AlgoInstanceStatus.Stopped };
-                    else if (clientId == STARTED_GUID_PLACEHOLDER && instanceId == STARTED_GUID_PLACEHOLDER)
+                    else if (authToken == STARTED_GUID_PLACEHOLDER)
                         return new AlgoClientInstanceData { AlgoInstanceStatus = AlgoInstanceStatus.Started };
 
                     return null;
@@ -222,7 +220,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
                             .Callback<IMessageInfo>((request) => request.ReplyAsync(MeaResponseType.Pong, request.Message).Wait());
 
             return new ConnectionWorker(streamWrapper, messageHandlerMock.Object, algoClientInstanceRepo, log,
-                (str) => Task.FromResult(shouldAuthenticate));
+                (conn, str) => Task.FromResult(shouldAuthenticate));
         }
     }
 }

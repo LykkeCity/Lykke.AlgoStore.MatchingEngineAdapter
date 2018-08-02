@@ -4,6 +4,7 @@ using AzureStorage.Tables;
 using Common.Log;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Entities;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
+using Lykke.AlgoStore.Job.Stopping.Client;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services;
@@ -58,6 +59,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
 
             builder.RegisterInstance<IAlgoClientInstanceRepository>(CreateAlgoClientInstanceRepository(
                 _settings.Nested(x => x.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString), _log)).SingleInstance();
+
+            builder.RegisterAlgoInstanceStoppingClient(_settings.CurrentValue.AlgoStoreStoppingClient.ServiceUrl, _log);
 
             builder.Populate(_services);
         }
