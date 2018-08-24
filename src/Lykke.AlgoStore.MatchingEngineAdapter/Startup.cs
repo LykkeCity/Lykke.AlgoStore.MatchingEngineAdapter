@@ -56,10 +56,26 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
                     options.DefaultLykkeConfiguration("v1", "Lykke.AlgoStore.MathcingEngineAdapter API");
                 });
 
-                var builder = new ContainerBuilder();
-                var appSettings = Configuration.LoadSettings<AppSettings>();
+                var settingsManager = Configuration.LoadSettings<AppSettings>(x => (
+                    x.SlackNotifications.AzureQueue.ConnectionString, x.SlackNotifications.AzureQueue.QueueName,
+                    $"MatchingEngineAdapter"));
 
-                Log = CreateLogWithSlack(services, appSettings);
+                var appSettings = settingsManager;
+
+                //services.AddLykkeLogging(
+                //    settingsManager.ConnectionString(s => s.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString),
+                //    "MatchingEngineAdapterLog",
+                //    appSettings.CurrentValue.SlackNotifications.AzureQueue.ConnectionString,
+                //    appSettings.CurrentValue.SlackNotifications.AzureQueue.QueueName);
+
+                var builder = new ContainerBuilder();
+
+                Log = CreateLogWithSlack(services, appSettings);        
+
+               
+
+                //var logFactory = ApplicationContainer.Resolve<ILogFactory>();
+                //Log = logFactory.CreateLog(this);
 
                 builder.RegisterModule(new ServiceModule(appSettings, Log));
                 builder.RegisterModule(new ClientsModule(appSettings, Log));

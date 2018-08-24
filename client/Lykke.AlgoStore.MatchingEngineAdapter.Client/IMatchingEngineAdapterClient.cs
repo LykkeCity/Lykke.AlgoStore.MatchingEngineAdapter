@@ -1,5 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Contracts;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
 {
@@ -34,5 +36,28 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         /// <returns>A response model holding the market price</returns>
         Task<ResponseModel<double>> PlaceMarketOrderAsync(string walletId, string assetPairId, OrderAction orderAction,
             double volume, bool isStraight, string instanceId, double? reservedLimitVolume = null);
+
+
+        /// <summary>
+        /// Sends a limit order request to the matching engine adapter
+        /// </summary>
+        /// <param name="walletId">The wallet Id</param>
+        /// <param name="assetPairId">The asset pair Id</param>
+        /// <param name="orderAction">The arder action (Buy/Sell)</param>
+        /// <param name="volume">The volume to be traded</param>
+        /// <param name="price">The limit price</param>
+        /// <param name="instanceId">The algo instance Id</param>
+        /// <param name="cancelPreviousOrders">Cancel previous orders? (optional)</param>
+        /// <returns>A response model holding the limit order Id</returns>
+        Task<ResponseModel<LimitOrderResponseModel>> PlaceLimitOrderAsync(string walletId, string assetPairId, OrderAction orderAction,
+            double volume, double price, string instanceId, bool cancelPreviousOrders = false);
+
+        /// <summary>
+        /// Cancel limit order
+        /// </summary>
+        /// <param name="limitOrderId">The Id of the limit order</param>
+        /// <param name="instanceId">The algo instance Id</param>
+        /// <returns></returns>
+        Task<ResponseModel> CancelLimitOrderAsync(Guid limitOrderId, string instanceId);
     }
 }

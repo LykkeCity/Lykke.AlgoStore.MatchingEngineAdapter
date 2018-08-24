@@ -42,6 +42,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
             _messageHandlers.Add(typeof(PingRequest), PingHandler);
             _messageHandlers.Add(typeof(MarketOrderRequest), MarketOrderRequestHandler);
+            _messageHandlers.Add(typeof(LimitOrderRequest), LimitOrderRequestHandler);
+            _messageHandlers.Add(typeof(CancelLimitOrderRequest), CancelLimitOrderRequestHandler);
             _algoInstanceStoppingClient = algoInstanceStoppingClient;
             _log = log;
         }
@@ -93,12 +95,63 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
             await request.ReplyAsync(MeaResponseType.MarketOrderResponse, result);
 
-            if (result.Error != null && result.Error.Code == ResponseModel.ErrorCodeType.NotEnoughFunds)
+            if (result.Error != null && result.Error.Code == ErrorCodeType.NotEnoughFunds)
             {
                 await _log.WriteInfoAsync(nameof(MessageHandler), nameof(MarketOrderRequestHandler),
                     $"Instance {msg.InstanceId}, token {request.AuthToken} is out of funds, stopping...");
                 await _algoInstanceStoppingClient.DeleteAlgoInstanceAsync(msg.InstanceId, request.AuthToken);
             }
+        }
+
+        /// <summary>
+        /// Handles a <see cref="LimitOrderRequest"/> by replying with <see cref="ResponseModel{T}"/> containing
+        /// the response message />
+        /// </summary>
+        /// <param name="request">The <see cref="MIessageInfo"/> containing the message</param>
+        private async Task LimitOrderRequestHandler(IMessageInfo request)
+        {
+            var msg = (LimitOrderRequest)request.Message;
+
+            await _log.WriteInfoAsync(nameof(MessageHandler), nameof(LimitOrderRequestHandler),
+               $"Received limit order from {request.AuthToken}: {msg.OrderAction.ToString()} {msg.Volume} {msg.AssetPairId}, " +
+               $"Price: {msg.Price}, " +
+               $"Instance ID: {msg.InstanceId}");
+
+            var result = await _matchingEngineAdapter.PlaceLimitOrderAsync(msg.ClientId, msg.AssetPairId, msg.OrderAction,
+                msg.Volume, msg.Price, msg.InstanceId, msg.CancelPreviousOrders);
+
+            await _log.WriteInfoAsync(nameof(MessageHandler), nameof(LimitOrderRequestHandler),
+               $"Received response for limit order of instance {msg.InstanceId}, token {request.AuthToken}: " +
+               $"Valid: {result.Error == null}, " +
+               $"Error: {(result.Error == null ? null : $"Error Code: {result.Error.Code.ToString()}, Field: {result.Error.Field}, Message: {result.Error.Message}")}");
+
+            await request.ReplyAsync(MeaResponseType.LimitOrderResponse, result);
+
+            if (result.Error != null && result.Error.Code == ErrorCodeType.NotEnoughFunds)
+            {
+                await _log.WriteInfoAsync(nameof(MessageHandler), nameof(LimitOrderRequestHandler),
+                    $"Instance {msg.InstanceId}, token {request.AuthToken} is out of funds, stopping...");
+                await _algoInstanceStoppingClient.DeleteAlgoInstanceAsync(msg.InstanceId, request.AuthToken);
+            }
+        }
+
+        private async Task CancelLimitOrderRequestHandler(IMessageInfo request)
+        {
+            var msg = (CancelLimitOrderRequest)request.Message;
+
+            await _log.WriteInfoAsync(nameof(MessageHandler), nameof(CancelLimitOrderRequestHandler),
+               $"Received limit order cancellation from {request.AuthToken}, " +
+               $"Limit Order Id: {msg.LimitOrderId}, " +
+               $"Instance ID: {msg.InstanceId}");
+
+            var result = await _matchingEngineAdapter.CancelLimitOrderAsync(msg.LimitOrderId, msg.InstanceId);
+
+            await _log.WriteInfoAsync(nameof(MessageHandler), nameof(CancelLimitOrderRequestHandler),
+               $"Received response for limit order cancellation of instance {msg.InstanceId}, token {request.AuthToken}: " +
+               $"Valid: {result.Error == null}, " +
+               $"Error: {(result.Error == null ? null : $"Error Code: {result.Error.Code.ToString()}, Field: {result.Error.Field}, Message: {result.Error.Message}")}");
+
+            await request.ReplyAsync(MeaResponseType.CancelLimitOrderResponse, result);
         }
     }
 }

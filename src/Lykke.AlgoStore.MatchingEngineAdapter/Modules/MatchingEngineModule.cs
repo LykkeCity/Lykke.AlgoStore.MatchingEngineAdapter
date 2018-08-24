@@ -23,12 +23,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.BindMeClient(_settings.CurrentValue.MatchingEngineClient.IpEndpoint.GetClientIpEndPoint().Result,
-                socketLog: null, ignoreErrors: true);
+            builder.RegisgterMeClient(_settings.CurrentValue.MatchingEngineClient.IpEndpoint.GetClientIpEndPoint());
+            //builder.RegisgterMeClient(_settings.CurrentValue.MatchingEngineClient.IpEndpoint.GetClientIpEndPoint());
 
             builder.RegisterType<Services.MatchingEngineAdapter>()
                 .As<IMatchingEngineAdapter>()
-                .WithParameter(TypedParameter.From(_settings.CurrentValue.FeeSettings.TargetClientId.Hft))
                 .SingleInstance();
         }
     }

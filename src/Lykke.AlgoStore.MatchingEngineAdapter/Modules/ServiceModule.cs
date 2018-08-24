@@ -45,6 +45,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
             builder.RegisterType<ShutdownManager>()
                 .As<IShutdownManager>();
 
+            RegisterFeeServices(builder);
+
             builder.RegisterType<ListeningService>()
                 .As<IListeningService>()
                 .WithParameter(TypedParameter.From(_settings.CurrentValue.AlgoStoreMatchingEngineAdapter.Listener.Port))
@@ -63,6 +65,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
             builder.RegisterAlgoInstanceStoppingClient(_settings.CurrentValue.AlgoStoreStoppingClient.ServiceUrl, _log);
 
             builder.Populate(_services);
+        }
+
+        private void RegisterFeeServices(ContainerBuilder builder)
+        {
+            builder.RegisterType<FeeCalculatorAdapter>()
+                .As<IFeeCalculatorAdapter>()
+                .WithParameter(TypedParameter.From(_settings.CurrentValue.FeeSettings.TargetClientId.Hft))
+                .SingleInstance();
         }
 
         private static AlgoInstanceTradeRepository CreateAlgoTradeRepository(IReloadingManager<string> connectionString,
