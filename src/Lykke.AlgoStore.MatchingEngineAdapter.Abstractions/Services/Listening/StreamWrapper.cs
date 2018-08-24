@@ -19,7 +19,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening
         private static readonly Dictionary<byte, Type> _defaultMessageTypeMap = new Dictionary<byte, Type>
         {
             [(byte)MeaRequestType.Ping] = typeof(PingRequest),
-            [(byte)MeaRequestType.MarketOrderRequest] = typeof(MarketOrderRequest)
+            [(byte)MeaRequestType.MarketOrderRequest] = typeof(MarketOrderRequest),
+            [(byte)MeaRequestType.LimitOrderRequest] = typeof(LimitOrderRequest),
+            [(byte)MeaRequestType.CancelLimitOrderRequest] = typeof(CancelLimitOrderRequest)
         };
 
         private readonly Stream _stream;
