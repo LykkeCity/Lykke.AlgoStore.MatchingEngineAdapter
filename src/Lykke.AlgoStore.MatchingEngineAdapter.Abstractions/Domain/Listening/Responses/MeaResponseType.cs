@@ -3,6 +3,8 @@
     public enum MeaResponseType
     {
         Pong = 0,
-        MarketOrderResponse = 1
+        MarketOrderResponse = 1,
+        LimitOrderResponse = 2,
+        CancelLimitOrderResponse = 3
     }
 }
