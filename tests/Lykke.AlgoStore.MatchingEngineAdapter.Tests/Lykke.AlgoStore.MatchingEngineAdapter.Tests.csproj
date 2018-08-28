@@ -19,12 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Lykke.AlgoStore.CSharp.AlgoTemplate.Models">
-      <HintPath>..\..\..\..\..\..\Users\joksa\.nuget\packages\lykke.algostore.csharp.algotemplate.models\1.0.55\lib\netcoreapp2.0\Lykke.AlgoStore.CSharp.AlgoTemplate.Models.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
 
