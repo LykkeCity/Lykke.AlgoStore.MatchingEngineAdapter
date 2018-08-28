@@ -72,11 +72,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
                 var builder = new ContainerBuilder();
 
-                //Log = CreateLogWithSlack(services, appSettings);
-
-                //var logFactory = ApplicationContainer.Resolve<ILogFactory>();
-                //Log = logFactory.CreateLog(this);
-
                 builder.RegisterModule(new ServiceModule(appSettings));
                 builder.RegisterModule(new ClientsModule(appSettings));
                 builder.RegisterModule(new MatchingEngineModule(appSettings));
