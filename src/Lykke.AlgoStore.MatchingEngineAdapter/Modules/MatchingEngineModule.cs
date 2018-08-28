@@ -21,21 +21,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
         protected override void Load(ContainerBuilder builder)
         {
             builder.RegisgterMeClient(_settings.CurrentValue.MatchingEngineClient.IpEndpoint.GetClientIpEndPoint());
-            //builder.RegisgterMeClient(_settings.CurrentValue.MatchingEngineClient.IpEndpoint.GetClientIpEndPoint());
-
-            //builder.Register(s =>
-            //    {
-            //        var tcpMeClient = new TcpMatchingEngineClient(
-            //            _settings.CurrentValue.MatchingEngineClient.IpEndpoint.GetClientIpEndPoint(),
-            //            s.Resolve<ILogFactory>());
-
-            //        tcpMeClient.Start();
-
-            //        return tcpMeClient;
-            //    })
-            //    .As<Lykke.MatchingEngine.Connector.Abstractions.Services.IMatchingEngineClient>()
-            //    .As<TcpMatchingEngineClient>();
-
+            
             builder.RegisterType<Services.MatchingEngineAdapter>()
                 .As<IMatchingEngineAdapter>()
                 .SingleInstance();
