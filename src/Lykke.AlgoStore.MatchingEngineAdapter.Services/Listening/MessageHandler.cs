@@ -145,7 +145,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                $"Limit Order Id: {msg.LimitOrderId}, " +
                $"Instance ID: {msg.InstanceId}");
 
-            var result = await _matchingEngineAdapter.CancelLimitOrderAsync(msg.LimitOrderId, msg.InstanceId);
+            var result = await _matchingEngineAdapter.CancelLimitOrderAsync(msg.LimitOrderId);
 
             await _log.WriteInfoAsync(nameof(MessageHandler), nameof(CancelLimitOrderRequestHandler),
                $"Received response for limit order cancellation of instance {msg.InstanceId}, token {request.AuthToken}: " +

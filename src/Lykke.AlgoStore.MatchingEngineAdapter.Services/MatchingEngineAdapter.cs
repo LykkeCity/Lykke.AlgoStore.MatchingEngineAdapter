@@ -31,7 +31,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             _log = logFactory.CreateLog(this);
         }
 
-        public async Task<ResponseModel> CancelLimitOrderAsync(Guid limitOrderId, string instanceId)
+        public async Task<ResponseModel> CancelLimitOrderAsync(Guid limitOrderId)
         {
             var response = await _matchingEngineClient.CancelLimitOrderAsync(limitOrderId.ToString());
             await CheckResponseAndThrowIfNull(response);
