@@ -14,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions\Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Lykke.AlgoStore.MatchingEngineAdapter.Services\Lykke.AlgoStore.MatchingEngineAdapter.Services.csproj" />
   </ItemGroup>
 
