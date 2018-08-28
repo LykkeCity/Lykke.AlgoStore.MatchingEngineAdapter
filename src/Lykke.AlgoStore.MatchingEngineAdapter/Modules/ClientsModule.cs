@@ -1,7 +1,6 @@
 ﻿using System;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using Common.Log;
 using Lykke.AlgoStore.MatchingEngineAdapter.Settings;
 using Lykke.Service.Assets.Client;
 using Lykke.Service.FeeCalculator.Client;
@@ -14,21 +13,19 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
     {
         private readonly IReloadingManager<AppSettings> _settings;
         private readonly IServiceCollection _services;
-        private readonly ILog _log;
-
-        public ClientsModule(IReloadingManager<AppSettings> settings, ILog log)
+        
+        public ClientsModule(IReloadingManager<AppSettings> settings)
         {
             _settings = settings;
-            _log = log;
 
             _services = new ServiceCollection();
         }
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterFeeCalculatorClient(_settings.CurrentValue.FeeCalculatorServiceClient.ServiceUrl, _log);
+            builder.RegisterFeeCalculatorClient(_settings.CurrentValue.FeeCalculatorServiceClient.ServiceUrl);
 
-            _services.RegisterAssetsClient(AssetServiceSettings.Create(
+            builder.RegisterAssetsClient(AssetServiceSettings.Create(
                 new Uri(_settings.CurrentValue.AssetsServiceClient.ServiceUrl),
                 _settings.CurrentValue.AlgoStoreMatchingEngineAdapter.CacheExpirationPeriod));
 

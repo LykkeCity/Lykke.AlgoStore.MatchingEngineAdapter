@@ -3,7 +3,6 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using Common.Log;
-using JetBrains.Annotations;
 using System.Threading.Tasks;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
 using System.Collections.Concurrent;
@@ -12,6 +11,7 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
+using Lykke.Common.Log;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -43,12 +43,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         public ListeningService(
             IAlgoClientInstanceRepository clientInstanceRepository,
             IMessageHandler messageHandler,
-            [NotNull] ILog log,
+            ILogFactory logFactory,
             ushort port)
         {
             _clientInstanceRepository = clientInstanceRepository ?? throw new ArgumentNullException(nameof(clientInstanceRepository));
             _messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
-            _log = log ?? throw new ArgumentNullException(nameof(log));
+            _log = logFactory.CreateLog(this);
 
             _port = port;
         }
