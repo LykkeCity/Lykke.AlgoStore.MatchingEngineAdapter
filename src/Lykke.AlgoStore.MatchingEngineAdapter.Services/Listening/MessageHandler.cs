@@ -10,6 +10,7 @@ using Lykke.AlgoStore.Job.Stopping.Client;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
 using MarketOrderRequest = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests.MarketOrderRequest;
 using Common.Log;
+using Lykke.Common.Log;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -28,14 +29,14 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
         /// </summary>
         /// <param name="matchingEngineAdapter">A <see cref="IMatchingEngineAdapter"/> to use for communication with the ME</param>
         /// <param name="algoInstanceStoppingClient">A<see cref="IAlgoInstanceStoppingClient"/> to call AlgoStore stopping service</param>
-        /// <param name="log">An <see cref="ILog"/> to use for logging</param>
+        /// <param name="logFactory">An <see cref="ILog"/> to use for logging</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="matchingEngineAdapter"/> is null
         /// </exception>
         public MessageHandler(
             IMatchingEngineAdapter matchingEngineAdapter, 
             IAlgoInstanceStoppingClient algoInstanceStoppingClient,
-            ILog log)
+            ILogFactory logFactory)
         {
             _matchingEngineAdapter =
                 matchingEngineAdapter ?? throw new ArgumentNullException(nameof(matchingEngineAdapter));
@@ -45,7 +46,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             _messageHandlers.Add(typeof(LimitOrderRequest), LimitOrderRequestHandler);
             _messageHandlers.Add(typeof(CancelLimitOrderRequest), CancelLimitOrderRequestHandler);
             _algoInstanceStoppingClient = algoInstanceStoppingClient;
-            _log = log;
+            _log = logFactory.CreateLog(this);
         }
 
         public async Task HandleMessage(IMessageInfo messageInfo)

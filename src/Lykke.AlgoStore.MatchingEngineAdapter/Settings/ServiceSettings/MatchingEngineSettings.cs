@@ -1,6 +1,5 @@
 ﻿using Lykke.SettingsReader.Attributes;
 using System.Net;
-using System.Threading.Tasks;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Settings.ServiceSettings
 {

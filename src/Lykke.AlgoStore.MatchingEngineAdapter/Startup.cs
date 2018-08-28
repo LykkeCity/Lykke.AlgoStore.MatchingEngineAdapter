@@ -10,14 +10,13 @@ using Lykke.SlackNotification.AzureQueue;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 using AutoMapper;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Mapper;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
+using Lykke.Common.Log;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 
@@ -28,13 +27,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
         public IHostingEnvironment Environment { get; }
         public IContainer ApplicationContainer { get; private set; }
         public IConfigurationRoot Configuration { get; }
-        public ILog Log { get; private set; }
+        private ILog _log;
 
         public Startup(IHostingEnvironment env)
         {
+            InitMapper();
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
                 .AddEnvironmentVariables();
+
             Configuration = builder.Build();
 
             Environment = env;
@@ -62,40 +64,34 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
                 var appSettings = settingsManager;
 
-                //services.AddLykkeLogging(
-                //    settingsManager.ConnectionString(s => s.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString),
-                //    "MatchingEngineAdapterLog",
-                //    appSettings.CurrentValue.SlackNotifications.AzureQueue.ConnectionString,
-                //    appSettings.CurrentValue.SlackNotifications.AzureQueue.QueueName);
+                services.AddLykkeLogging(
+                    settingsManager.ConnectionString(s => s.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString),
+                    "MatchingEngineAdapterLog",
+                    appSettings.CurrentValue.SlackNotifications.AzureQueue.ConnectionString,
+                    appSettings.CurrentValue.SlackNotifications.AzureQueue.QueueName);
 
                 var builder = new ContainerBuilder();
 
-                Log = CreateLogWithSlack(services, appSettings);        
-
-               
+                //Log = CreateLogWithSlack(services, appSettings);
 
                 //var logFactory = ApplicationContainer.Resolve<ILogFactory>();
                 //Log = logFactory.CreateLog(this);
 
-                builder.RegisterModule(new ServiceModule(appSettings, Log));
-                builder.RegisterModule(new ClientsModule(appSettings, Log));
-                builder.RegisterModule(new MatchingEngineModule(appSettings, Log));
+                builder.RegisterModule(new ServiceModule(appSettings));
+                builder.RegisterModule(new ClientsModule(appSettings));
+                builder.RegisterModule(new MatchingEngineModule(appSettings));
 
                 builder.Populate(services);
                 ApplicationContainer = builder.Build();
 
-                Mapper.Initialize(cfg =>
-                                   {
-                                       cfg.AddProfiles(typeof(AutoMapperModelProfile));
-                                   });
-
-                Mapper.AssertConfigurationIsValid();
+                var logFactory = ApplicationContainer.Resolve<ILogFactory>();
+                _log = logFactory.CreateLog(this);
 
                 return new AutofacServiceProvider(ApplicationContainer);
             }
             catch (Exception ex)
             {
-                Log?.WriteFatalError(nameof(Startup), nameof(ConfigureServices), ex);
+                _log?.WriteFatalError(nameof(Startup), nameof(ConfigureServices), ex);
                 throw;
             }
         }
@@ -110,7 +106,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
                 }
 
                 app.UseLykkeForwardedHeaders();
-                app.UseLykkeMiddleware("LykkeService", ex => new { Message = "Technical problem" });
+                app.UseLykkeMiddleware(ex => new { Message = "Technical problem" });
 
                 app.UseMvc();
                 app.UseSwagger(c =>
@@ -130,9 +126,19 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
             }
             catch (Exception ex)
             {
-                Log?.WriteFatalError(nameof(Startup), nameof(Configure), ex);
+                _log?.WriteFatalError(nameof(Startup), nameof(Configure), ex);
                 throw;
             }
+        }
+
+        private static void InitMapper()
+        {
+            Mapper.Initialize(cfg =>
+            {
+                cfg.AddProfiles(typeof(AutoMapperModelProfile));
+            });
+
+            Mapper.AssertConfigurationIsValid();
         }
 
         private async Task StartApplication()
@@ -143,7 +149,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
 
                 await ApplicationContainer.Resolve<IStartupManager>().StartAsync();
 
-                await Log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Started");
+                await _log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Started");
 
                 //Let us start our listener here
                 var listeningService = ApplicationContainer.Resolve<IListeningService>();
@@ -154,15 +160,15 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
                 listeningServiceTask.ContinueWith((task) =>
                 {
                     if (task.IsFaulted)
-                        Log.WriteFatalError("", nameof(listeningService), task.Exception);
+                        _log.WriteFatalError("", nameof(listeningService), task.Exception);
                 });
 #pragma warning restore 4014
 
-                await Log.WriteMonitorAsync("", $"{nameof(listeningService)}", "Started");
+                await _log.WriteMonitorAsync("", $"{nameof(listeningService)}", "Started");
             }
             catch (Exception ex)
             {
-                await Log.WriteFatalErrorAsync(nameof(Startup), nameof(StartApplication), "", ex);
+                await _log.WriteFatalErrorAsync(nameof(Startup), nameof(StartApplication), "", ex);
                 throw;
             }
         }
@@ -177,9 +183,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
             }
             catch (Exception ex)
             {
-                if (Log != null)
+                if (_log != null)
                 {
-                    await Log.WriteFatalErrorAsync(nameof(Startup), nameof(StopApplication), "", ex);
+                    await _log.WriteFatalErrorAsync(nameof(Startup), nameof(StopApplication), "", ex);
                 }
 
                 throw;
@@ -192,19 +198,19 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter
             {
                 // NOTE: Service can't receive and process requests here, so you can destroy all resources
 
-                if (Log != null)
+                if (_log != null)
                 {
-                    await Log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Terminating");
+                    await _log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Terminating");
                 }
 
                 ApplicationContainer.Dispose();
             }
             catch (Exception ex)
             {
-                if (Log != null)
+                if (_log != null)
                 {
-                    await Log.WriteFatalErrorAsync(nameof(Startup), nameof(CleanUp), "", ex);
-                    (Log as IDisposable)?.Dispose();
+                    await _log.WriteFatalErrorAsync(nameof(Startup), nameof(CleanUp), "", ex);
+                    (_log as IDisposable)?.Dispose();
                 }
 
                 throw;

@@ -1,14 +1,14 @@
 ﻿using Common.Log;
-using JetBrains.Annotations;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Contracts;
 using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services;
-using Lykke.MatchingEngine.Connector.Abstractions.Models;
 using Lykke.MatchingEngine.Connector.Abstractions.Services;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Lykke.Common.Log;
+using Lykke.MatchingEngine.Connector.Models.Api;
 using OrderAction = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.OrderAction;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
@@ -23,12 +23,12 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         public MatchingEngineAdapter(IMatchingEngineClient matchingEngineClient,
             IAlgoInstanceTradeRepository algoClientInstanceRepository,
             IFeeCalculatorAdapter feeCalculator,
-            [NotNull] ILog log)
+            ILogFactory logFactory)
         {
             _matchingEngineClient = matchingEngineClient ?? throw new ArgumentNullException(nameof(matchingEngineClient));
             _algoInstanceTradeRepository = algoClientInstanceRepository ?? throw new ArgumentNullException(nameof(algoClientInstanceRepository));
             _feeCalculator = feeCalculator ?? throw new ArgumentNullException(nameof(feeCalculator));
-            _log = log ?? throw new ArgumentNullException(nameof(log));
+            _log = logFactory.CreateLog(this);
         }
 
         public async Task<ResponseModel> CancelLimitOrderAsync(Guid limitOrderId, string instanceId)

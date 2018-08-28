@@ -1,7 +1,6 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
-using Common.Log;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Entities;
 using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Repositories;
 using Lykke.AlgoStore.Job.Stopping.Client;
@@ -10,6 +9,10 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services;
 using Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening;
 using Lykke.AlgoStore.MatchingEngineAdapter.Settings;
+using Lykke.Common.Log;
+using Lykke.Logs;
+using Lykke.Logs.Loggers.LykkeConsole;
+using Lykke.Sdk.Health;
 using Lykke.SettingsReader;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,23 +21,17 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
     public class ServiceModule : Module
     {
         private readonly IReloadingManager<AppSettings> _settings;
-        private readonly ILog _log;
         private readonly IServiceCollection _services;
 
-        public ServiceModule(IReloadingManager<AppSettings> settings, ILog log)
+        public ServiceModule(IReloadingManager<AppSettings> settings)
         {
             _settings = settings;
-            _log = log;
 
             _services = new ServiceCollection();
         }
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterInstance(_log)
-                    .As<ILog>()
-                    .SingleInstance();
-
             builder.RegisterType<HealthService>()
                 .As<IHealthService>()
                 .SingleInstance();
@@ -56,13 +53,30 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
                 .As<IMessageHandler>()
                 .SingleInstance();
 
-            builder.RegisterInstance<IAlgoInstanceTradeRepository>(CreateAlgoTradeRepository(
-                _settings.Nested(x => x.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString), _log)).SingleInstance();
+            builder.Register(x =>
+                {
+                    var log = x.Resolve<ILogFactory>();
+                    var repository = CreateAlgoTradeRepository(
+                        _settings.Nested(y => y.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString), log);
 
-            builder.RegisterInstance<IAlgoClientInstanceRepository>(CreateAlgoClientInstanceRepository(
-                _settings.Nested(x => x.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString), _log)).SingleInstance();
+                    return repository;
+                })
+                .As<IAlgoInstanceTradeRepository>()
+                .SingleInstance();
 
-            builder.RegisterAlgoInstanceStoppingClient(_settings.CurrentValue.AlgoStoreStoppingClient.ServiceUrl, _log);
+            builder.Register(x =>
+                {
+                    var log = x.Resolve<ILogFactory>();
+                    var repository = CreateAlgoClientInstanceRepository(
+                        _settings.Nested(y => y.AlgoStoreMatchingEngineAdapter.Db.LogsConnectionString), log);
+
+                    return repository;
+                })
+                .As<IAlgoClientInstanceRepository>()
+                .SingleInstance();
+
+            var logFactory = LogFactory.Create().AddConsole();
+            builder.RegisterAlgoInstanceStoppingClient(_settings.CurrentValue.AlgoStoreStoppingClient.ServiceUrl, logFactory.CreateLog(this));
 
             builder.Populate(_services);
         }
@@ -76,17 +90,19 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Modules
         }
 
         private static AlgoInstanceTradeRepository CreateAlgoTradeRepository(IReloadingManager<string> connectionString,
-            ILog log)
+            ILogFactory log)
         {
             return new AlgoInstanceTradeRepository(
                 AzureTableStorage<AlgoInstanceTradeEntity>.Create(connectionString, AlgoInstanceTradeRepository.TableName, log));
         }
 
         private static AlgoClientInstanceRepository CreateAlgoClientInstanceRepository(IReloadingManager<string> connectionString,
-            ILog log)
+            ILogFactory log)
         {
             return new AlgoClientInstanceRepository(
-                AzureTableStorage<AlgoClientInstanceEntity>.Create(connectionString, AlgoClientInstanceRepository.TableName, log));
+                AzureTableStorage<AlgoClientInstanceEntity>.Create(connectionString, AlgoClientInstanceRepository.TableName, log),
+                AzureTableStorage<AlgoInstanceStoppingEntity>.Create(connectionString, AlgoClientInstanceRepository.TableName, log),
+                AzureTableStorage<AlgoInstanceTcBuildEntity>.Create(connectionString, AlgoClientInstanceRepository.TableName, log));
         }
     }
 }

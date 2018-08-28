@@ -1,5 +1,5 @@
-﻿using Lykke.MatchingEngine.Connector.Abstractions.Models;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Lykke.MatchingEngine.Connector.Models.Api;
 using OrderAction = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.OrderAction;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Core.Services
