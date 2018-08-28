@@ -10,10 +10,10 @@
   <ItemGroup>
     <PackageReference Include="Autofac" Version="4.8.1" />
     <PackageReference Include="Lykke.Common" Version="7.0.3" />
-    <PackageReference Include="Lykke.MatchingEngineConnector.Abstractions" Version="6.0.3" />
+    <PackageReference Include="Lykke.MatchingEngineConnector" Version="8.3.0" />
     <PackageReference Include="Lykke.Service.Assets.Client" Version="4.4.0" />
     <PackageReference Include="Lykke.Service.FeeCalculator.Client" Version="2.2.0" />
-    <PackageReference Include="protobuf-net" Version="2.3.7" />
+    <PackageReference Include="protobuf-net" Version="2.3.13" />
   </ItemGroup>
   
   <ItemGroup>
