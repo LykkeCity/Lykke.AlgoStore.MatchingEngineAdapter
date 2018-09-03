@@ -7,6 +7,7 @@ using Lykke.MatchingEngine.Connector.Abstractions.Services;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Lykke.AlgoStore.CSharp.AlgoTemplate.Models.Enumerators;
 using Lykke.Common.Log;
 using Lykke.MatchingEngine.Connector.Models.Api;
 using OrderAction = Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.OrderAction;
@@ -25,8 +26,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             IFeeCalculatorAdapter feeCalculator,
             ILogFactory logFactory)
         {
-            _matchingEngineClient = matchingEngineClient ?? throw new ArgumentNullException(nameof(matchingEngineClient));
-            _algoInstanceTradeRepository = algoClientInstanceRepository ?? throw new ArgumentNullException(nameof(algoClientInstanceRepository));
+            _matchingEngineClient =
+                matchingEngineClient ?? throw new ArgumentNullException(nameof(matchingEngineClient));
+            _algoInstanceTradeRepository = algoClientInstanceRepository ??
+                                           throw new ArgumentNullException(nameof(algoClientInstanceRepository));
             _feeCalculator = feeCalculator ?? throw new ArgumentNullException(nameof(feeCalculator));
             _log = logFactory.CreateLog(this);
         }
@@ -45,7 +48,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             return ConvertToApiModel(response.Status);
         }
 
-        public async Task<ResponseModel<double>> HandleMarketOrderAsync(string clientId, string assetPairId, OrderAction orderAction, double volume,
+        public async Task<ResponseModel<double>> HandleMarketOrderAsync(string clientId, string assetPairId,
+            OrderAction orderAction, double volume,
             bool straight, string instanceId, double? reservedLimitVolume = null)
         {
             var order = new MarketOrderModel
@@ -57,7 +61,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
                 Straight = straight,
                 Volume = Math.Abs(volume),
                 OrderAction = orderAction.ToMeOrderAction(),
-                Fees =  await _feeCalculator.GetMarketOrderFees(clientId, assetPairId, orderAction) 
+                Fees = await _feeCalculator.GetMarketOrderFees(clientId, assetPairId, orderAction)
             };
 
             using (var cts = new CancellationTokenSource(10_000))
@@ -68,22 +72,28 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
                 {
                     response = await _matchingEngineClient.HandleMarketOrderAsync(order, cts.Token);
                 }
-                catch(OperationCanceledException)
-                { // Empty block, will throw on the check below
+                catch (OperationCanceledException)
+                {
+                    // Empty block, will throw on the check below
                 }
 
                 await CheckResponseAndThrowIfNull(response);
+
                 if (response.Status == MeStatusCodes.Ok)
                 {
-                    await SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, response.Price, instanceId);
+                    await SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, response.Price, instanceId,
+                        OrderType.Market);
+
                     return ResponseModel<double>.CreateOk(response.Price);
                 }
+
                 return ConvertToApiModel<double>(response.Status);
             }
         }
 
 
-        public async Task<ResponseModel<LimitOrderResponseModel>> PlaceLimitOrderAsync(string clientId, string assetPairId, OrderAction orderAction,
+        public async Task<ResponseModel<LimitOrderResponseModel>> PlaceLimitOrderAsync(string clientId,
+            string assetPairId, OrderAction orderAction,
             double volume, double price, string instanceId, bool cancelPreviousOrders = false)
         {
             var requestId = GetNextRequestId();
@@ -97,7 +107,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
                 CancelPreviousOrders = cancelPreviousOrders,
                 Volume = Math.Abs(volume),
                 OrderAction = orderAction.ToMeOrderAction(),
-                Fees =  await _feeCalculator.GetLimitOrderFees(clientId, assetPairId, orderAction) 
+                Fees = await _feeCalculator.GetLimitOrderFees(clientId, assetPairId, orderAction)
             };
 
             using (var cts = new CancellationTokenSource(10_000))
@@ -106,7 +116,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
 
                 try
                 {
-                    response = await _matchingEngineClient.PlaceLimitOrderAsync(order);
+                    response = await _matchingEngineClient.PlaceLimitOrderAsync(order, cts.Token);
                 }
                 catch (OperationCanceledException)
                 {
@@ -121,7 +131,10 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
 
                 if (response.Status == MeStatusCodes.Ok)
                 {
-                    //REMARK Add logic to save limit order in our Trading Service
+                    //REMARK: Price is set to NULL for limit order cause it does not come as response from ME
+                    await SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, null, instanceId,
+                        OrderType.Limit);
+
                     return ResponseModel<LimitOrderResponseModel>.CreateOk(result);
                 }
 
@@ -138,7 +151,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             if (response == null)
             {
                 var exception = new InvalidOperationException("ME not available");
-                await _log.WriteErrorAsync(nameof(MatchingEngineAdapter), nameof(CancelLimitOrderAsync), exception);
+
+                _log.Error(nameof(MatchingEngineAdapter), exception, nameof(CancelLimitOrderAsync));
+
                 throw exception;
             }
         }
@@ -156,17 +171,19 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             return ResponseModel<T>.CreateFail(GetErrorCodeType(status));
         }
 
-        private async Task SaveTradeInDbAsync(string orderId, string walletId, OrderAction orderAction, double volume, double price, string instanceId)
+        private async Task SaveTradeInDbAsync(string orderId, string walletId, OrderAction orderAction, double volume,
+            double? price, string instanceId, OrderType orderType)
         {
             await _algoInstanceTradeRepository.CreateAlgoInstanceOrderAsync(
                 new CSharp.AlgoTemplate.Models.Models.AlgoInstanceTrade
                 {
                     OrderId = orderId,
                     WalletId = walletId,
-                    IsBuy = orderAction == OrderAction.Buy ? true : false,
+                    IsBuy = orderAction == OrderAction.Buy,
                     Amount = volume,
                     Price = price,
-                    InstanceId = instanceId
+                    InstanceId = instanceId,
+                    OrderType = orderType
                 });
         }
 
@@ -213,7 +230,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
                 case MeStatusCodes.NotFoundPrevious:
                     return ErrorCodeType.NotFoundPrevious;
                 default:
-                    _log.WriteWarningAsync(nameof(GetErrorCodeType), nameof(MatchingEngineAdapter), $"Unknown ME status code {code}");
+                    _log.Warning(nameof(GetErrorCodeType), $"Unknown ME status code {code}",
+                        context: nameof(MatchingEngineAdapter));
                     return ErrorCodeType.Runtime;
             }
         }
