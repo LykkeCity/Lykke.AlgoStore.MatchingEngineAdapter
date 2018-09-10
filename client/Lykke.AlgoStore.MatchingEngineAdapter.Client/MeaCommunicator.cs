@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Contracts;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Requests;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Listening.Responses;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Services.Listening;
@@ -17,7 +18,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         private static readonly Dictionary<byte, Type> _defaultMessageTypeMap = new Dictionary<byte, Type>
         {
             [(byte)MeaResponseType.Pong] = typeof(PingRequest),
-            [(byte)MeaResponseType.MarketOrderResponse] = typeof(ResponseModel<double>)
+            [(byte)MeaResponseType.MarketOrderResponse] = typeof(ResponseModel<double>),
+            [(byte)MeaResponseType.LimitOrderResponse] = typeof(ResponseModel<LimitOrderResponseModel>)
         };
 
         private TcpClient _tcpClient = new TcpClient();
