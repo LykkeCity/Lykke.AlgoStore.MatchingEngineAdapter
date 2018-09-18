@@ -174,7 +174,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         private async Task SaveTradeInDbAsync(string orderId, string walletId, OrderAction orderAction, double volume,
             double? price, string instanceId, OrderType orderType)
         {
-            await _algoInstanceTradeRepository.CreateAlgoInstanceOrderAsync(
+            await _algoInstanceTradeRepository.CreateOrUpdateAlgoInstanceOrderAsync(
                 new CSharp.AlgoTemplate.Models.Models.AlgoInstanceTrade
                 {
                     OrderId = orderId,
@@ -183,7 +183,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
                     Amount = volume,
                     Price = price,
                     InstanceId = instanceId,
-                    OrderType = orderType
+                    OrderType = orderType,
+                    OrderStatus = OrderStatus.Placed
                 });
         }
 
