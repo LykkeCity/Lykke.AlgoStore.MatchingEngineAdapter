@@ -131,8 +131,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
 
                 if (response.Status == MeStatusCodes.Ok)
                 {
-                    //REMARK: Price is set to NULL for limit order cause it does not come as response from ME
-                    await SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, null, instanceId,
+                    //REMARK: Price is set to the value sent to MEA cause ME does not send price as part of response for limit order
+                    await SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, price, instanceId,
                         OrderType.Limit);
 
                     return ResponseModel<LimitOrderResponseModel>.CreateOk(result);
@@ -174,7 +174,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
         private async Task SaveTradeInDbAsync(string orderId, string walletId, OrderAction orderAction, double volume,
             double? price, string instanceId, OrderType orderType)
         {
-            await _algoInstanceTradeRepository.CreateAlgoInstanceOrderAsync(
+            await _algoInstanceTradeRepository.CreateOrUpdateAlgoInstanceOrderAsync(
                 new CSharp.AlgoTemplate.Models.Models.AlgoInstanceTrade
                 {
                     OrderId = orderId,
@@ -183,7 +183,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
                     Amount = volume,
                     Price = price,
                     InstanceId = instanceId,
-                    OrderType = orderType
+                    OrderType = orderType,
+                    OrderStatus = OrderStatus.Placed
                 });
         }
 
