@@ -131,8 +131,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
 
                 if (response.Status == MeStatusCodes.Ok)
                 {
-                    //REMARK: Price is set to NULL for limit order cause it does not come as response from ME
-                    await SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, null, instanceId,
+                    //REMARK: Price is set to the value sent to MEA cause ME does not send price as part of response for limit order
+                    await SaveTradeInDbAsync(order.Id, clientId, orderAction, volume, price, instanceId,
                         OrderType.Limit);
 
                     return ResponseModel<LimitOrderResponseModel>.CreateOk(result);
