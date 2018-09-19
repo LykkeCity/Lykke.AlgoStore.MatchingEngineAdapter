@@ -1,10 +1,12 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Helpers;
+﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Contracts;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Helpers;
 using ProtoBuf;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
 {
     [ProtoContract]
     [ProtoInclude(7, typeof(ResponseModel<double>))]
+    [ProtoInclude(8, typeof(ResponseModel<LimitOrderResponseModel>))]
     public class ResponseModel
     {
         [ProtoMember (1, IsRequired = false)]

@@ -1,8 +1,7 @@
 ﻿using System;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
-using Lykke.AlgoStore.MatchingEngineAdapter.Core.Domain;
 using FeeOrderAction = Lykke.Service.FeeCalculator.AutorestClient.Models.OrderAction;
-using MeOrderAction = Lykke.MatchingEngine.Connector.Abstractions.Models.OrderAction;
+using MeCommon = Lykke.MatchingEngine.Connector.Models.Common;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
 {
@@ -26,16 +25,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
             return orderAction;
         }
 
-        public static MeOrderAction ToMeOrderAction(this OrderAction action)
+        public static MeCommon.OrderAction ToMeOrderAction(this OrderAction action)
         {
-            MeOrderAction orderAction;
+            MeCommon.OrderAction orderAction;
             switch (action)
             {
                 case OrderAction.Buy:
-                    orderAction = MeOrderAction.Buy;
+                    orderAction = MeCommon.OrderAction.Buy;
                     break;
                 case OrderAction.Sell:
-                    orderAction = MeOrderAction.Sell;
+                    orderAction = MeCommon.OrderAction.Sell;
                     break;
                 default:
                     throw new Exception("Unknown order action");
