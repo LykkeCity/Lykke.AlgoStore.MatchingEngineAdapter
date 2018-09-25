@@ -1,4 +1,5 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Contracts;
+﻿using System;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Contracts;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Helpers;
 using ProtoBuf;
 
@@ -29,6 +30,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
             /// </summary>
             [ProtoMember(3, IsRequired = true)]
             public string Message { get; set; }
+
+            [ProtoMember(4, IsRequired = false)]
+            public Exception Exception { get; set; }
         }
 
         public static ResponseModel CreateInvalidFieldError(string field, string message)
@@ -44,7 +48,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
             };
         }
 
-        public static ResponseModel CreateFail(ErrorCodeType errorCodeType, string message = null)
+        public static ResponseModel CreateFail(ErrorCodeType errorCodeType, string message = null, Exception exception = null)
         {
             if (message == null)
             {
@@ -56,7 +60,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
                 Error = new ErrorModel
                 {
                     Code = errorCodeType,
-                    Message = message
+                    Message = message,
+                    Exception = exception
                 }
             };
         }
@@ -96,7 +101,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
             };
         }
 
-        public new static ResponseModel<T> CreateFail(ErrorCodeType errorCodeType, string message = null)
+        public new static ResponseModel<T> CreateFail(ErrorCodeType errorCodeType, string message = null, Exception exception = null)
         {
             if (message == null)
             {
@@ -108,7 +113,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
                 Error = new ErrorModel
                 {
                     Code = errorCodeType,
-                    Message = message
+                    Message = message,
+                    Exception = exception
                 }
             };
         }
