@@ -5,6 +5,8 @@
         Pong = 0,
         MarketOrderResponse = 1,
         LimitOrderResponse = 2,
-        CancelLimitOrderResponse = 3
+        CancelLimitOrderResponse = 3,
+        Exception = 4
+        
     }
 }
