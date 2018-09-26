@@ -31,8 +31,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
             [ProtoMember(3, IsRequired = true)]
             public string Message { get; set; }
 
-            [ProtoMember(4, IsRequired = false)]
-            public Exception Exception { get; set; }
         }
 
         public static ResponseModel CreateInvalidFieldError(string field, string message)
@@ -48,7 +46,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
             };
         }
 
-        public static ResponseModel CreateFail(ErrorCodeType errorCodeType, string message = null, Exception exception = null)
+        public static ResponseModel CreateFail(ErrorCodeType errorCodeType, string message = null)
         {
             if (message == null)
             {
@@ -60,8 +58,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
                 Error = new ErrorModel
                 {
                     Code = errorCodeType,
-                    Message = message,
-                    Exception = exception
+                    Message = message
                 }
             };
         }
@@ -101,7 +98,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
             };
         }
 
-        public new static ResponseModel<T> CreateFail(ErrorCodeType errorCodeType, string message = null, Exception exception = null)
+        public new static ResponseModel<T> CreateFail(ErrorCodeType errorCodeType, string message = null)
         {
             if (message == null)
             {
@@ -113,8 +110,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
                 Error = new ErrorModel
                 {
                     Code = errorCodeType,
-                    Message = message,
-                    Exception = exception
+                    Message = message
                 }
             };
         }

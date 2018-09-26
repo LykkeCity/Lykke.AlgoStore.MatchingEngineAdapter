@@ -119,8 +119,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
             var messageInfoMock = new Mock<IMessageInfo>(MockBehavior.Strict);
 
             messageInfoMock.SetupGet(m => m.Message)
-                           .Returns(messageToReturn)
-                           .Verifiable();
+                .Returns(messageToReturn)
+                .Verifiable();
 
             var setup = messageInfoMock.Setup(m => m.ReplyAsync(MeaResponseType.Pong, It.IsAny<PingRequest>()))
                                        .Returns(Task.CompletedTask);
@@ -215,9 +215,9 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Tests.Services.Listening
         {
             var messageHandlerMock = new Mock<IMessageHandler>();
             var algoClientInstanceRepo = Given_Correct_AlgoClientInstanceRepository();
-
+          
             messageHandlerMock.Setup(m => m.HandleMessage(It.IsAny<IMessageInfo>()))
-                            .Callback<IMessageInfo>((request) => request.ReplyAsync(MeaResponseType.Pong, request.Message).Wait());
+                            .Callback<IMessageInfo>((request) => request.ReplyAsync(MeaResponseType.Pong, new PingRequest { Message = "Success"}).Wait());
 
             return new ConnectionWorker(streamWrapper, messageHandlerMock.Object, algoClientInstanceRepo, log,
                 (conn, str) => Task.FromResult(shouldAuthenticate));
