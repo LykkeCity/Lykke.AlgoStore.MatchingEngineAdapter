@@ -120,7 +120,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     }
                     catch (Exception ex)
                     {
-                        _log.Error(ex, "Exception while processing request", message);
+                        _log.Error(ex, $"Exception while processing {message.Message.GetType().Name}", message);
                         await HandleMEAException(message, ex);
                         throw;
                     }
@@ -155,8 +155,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 
         private bool HandleConnectionFailure(Exception ex)
         {
-            _log.Error(ex, "Exception while processing request", _connection);
-
             switch (ex)
             {
                 case System.IO.IOException ioe:
