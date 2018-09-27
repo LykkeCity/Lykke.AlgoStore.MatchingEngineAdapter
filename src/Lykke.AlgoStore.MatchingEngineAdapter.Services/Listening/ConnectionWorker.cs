@@ -9,6 +9,9 @@ using Lykke.AlgoStore.MatchingEngineAdapter.Core.Services.Listening;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Contracts;
+using Lykke.Common.Log;
 
 namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
 {
@@ -111,7 +114,16 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                         break;
                     }
 
-                    await _messageHandler.HandleMessage(message);
+                    try
+                    {
+                        await _messageHandler.HandleMessage(message);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error(ex, "Exception while processing request", message);
+                        await HandleMEAException(message, ex);
+                        throw;
+                    }
                 }
             }
             catch(AggregateException e)
@@ -130,9 +142,22 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
             Dispose();
         }
 
+        private async Task HandleMEAException(IMessageInfo request, Exception e)
+        {
+            var requestType = request.Message.GetType();
+            if (requestType == typeof(LimitOrderRequest))
+                await request.ReplyAsync(MeaResponseType.LimitOrderResponse, ResponseModel<LimitOrderResponseModel>.CreateFail(ErrorCodeType.Runtime, e.Message));
+            if (requestType == typeof(MarketOrderRequest))
+                await request.ReplyAsync(MeaResponseType.MarketOrderResponse, ResponseModel<double>.CreateFail(ErrorCodeType.Runtime, e.Message));
+            if (requestType == typeof(CancelLimitOrderRequest))
+                await request.ReplyAsync(MeaResponseType.CancelLimitOrderResponse, ResponseModel.CreateFail(ErrorCodeType.Runtime, e.Message));
+        }
+
         private bool HandleConnectionFailure(Exception ex)
         {
-            switch(ex)
+            _log.Error(ex, "Exception while processing request", _connection);
+
+            switch (ex)
             {
                 case System.IO.IOException ioe:
                     if (_connection.IsAuthenticated)
@@ -148,7 +173,6 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services.Listening
                     _log.WriteWarning(nameof(ConnectionWorker), nameof(AcceptMessagesAsync),
                         $"Client {_connection} sent invalid data, dropping connection!");
                     return true;
-
                 default:
                     return false;
             }
