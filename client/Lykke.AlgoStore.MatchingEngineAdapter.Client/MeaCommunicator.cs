@@ -19,7 +19,8 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Client
         {
             [(byte)MeaResponseType.Pong] = typeof(PingRequest),
             [(byte)MeaResponseType.MarketOrderResponse] = typeof(ResponseModel<double>),
-            [(byte)MeaResponseType.LimitOrderResponse] = typeof(ResponseModel<LimitOrderResponseModel>)
+            [(byte)MeaResponseType.LimitOrderResponse] = typeof(ResponseModel<LimitOrderResponseModel>),
+            [(byte)MeaResponseType.CancelLimitOrderResponse] = typeof(ResponseModel)
         };
 
         private TcpClient _tcpClient = new TcpClient();
