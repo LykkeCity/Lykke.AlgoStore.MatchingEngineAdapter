@@ -1,4 +1,5 @@
-﻿using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Contracts;
+﻿using System;
+using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain.Contracts;
 using Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Helpers;
 using ProtoBuf;
 
@@ -29,6 +30,7 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
             /// </summary>
             [ProtoMember(3, IsRequired = true)]
             public string Message { get; set; }
+
         }
 
         public static ResponseModel CreateInvalidFieldError(string field, string message)
