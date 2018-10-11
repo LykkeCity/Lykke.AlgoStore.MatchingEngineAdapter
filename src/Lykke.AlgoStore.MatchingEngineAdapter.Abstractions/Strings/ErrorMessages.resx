@@ -126,6 +126,9 @@
   <data name="BalanceLowerThanReserved" xml:space="preserve">
     <value>Balance lower than reserved</value>
   </data>
+  <data name="DisabledAsset" xml:space="preserve">
+    <value>Asset is Disabled</value>
+  </data>
   <data name="Duplicate" xml:space="preserve">
     <value>Duplicate</value>
   </data>
@@ -138,8 +141,20 @@
   <data name="InvalidInputField" xml:space="preserve">
     <value>Invalid input field</value>
   </data>
+  <data name="InvalidOrderValue" xml:space="preserve">
+    <value>Invalid Order Value</value>
+  </data>
   <data name="InvalidPrice" xml:space="preserve">
     <value>Invalid price</value>
+  </data>
+  <data name="InvalidPriceAccuracy" xml:space="preserve">
+    <value>Invalid Price Accuracy</value>
+  </data>
+  <data name="InvalidVolume" xml:space="preserve">
+    <value>Invalid Volume</value>
+  </data>
+  <data name="InvalidVolumeAccuracy" xml:space="preserve">
+    <value>Invalid Volume Accuracy</value>
   </data>
   <data name="LeadToNegativeSpread" xml:space="preserve">
     <value>The order leads to negative spread</value>
@@ -170,6 +185,9 @@
   </data>
   <data name="RuntimeErrorX" xml:space="preserve">
     <value>Runtime error {0}</value>
+  </data>
+  <data name="TooHighPriceDeviation" xml:space="preserve">
+    <value>Too High Price Deviation</value>
   </data>
   <data name="UnknownAsset" xml:space="preserve">
     <value>Unknown asset</value>

@@ -29,6 +29,11 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
         AlreadyProcessed = 402,
 
         /// <summary>
+        /// Disabled Asset
+        /// </summary>
+        DisabledAsset = 403,
+
+        /// <summary>
         /// Unknown asset
         /// </summary>
         UnknownAsset = 410,
@@ -92,6 +97,31 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Domain
         /// Previous not found
         /// </summary>
         NotFoundPrevious = 423,
+
+        /// <summary>
+        /// Invalid Volume Accuracy
+        /// </summary>
+        InvalidVolumeAccuracy = 431,
+
+        /// <summary>
+        /// Invalid Price Accuracy
+        /// </summary>
+        InvalidPriceAccuracy = 432,
+
+        /// <summary>
+        /// Invalid Volume
+        /// </summary>
+        InvalidVolume = 434,
+
+        /// <summary>
+        /// Too High Price Deviation
+        /// </summary>
+        TooHighPriceDeviation = 435,
+
+        /// <summary>
+        /// Invalid Order Value
+        /// </summary>
+        InvalidOrderValue = 436,
 
         /// <summary>
         /// Runtime error
