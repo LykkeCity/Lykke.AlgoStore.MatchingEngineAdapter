@@ -230,6 +230,18 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Services
                     return ErrorCodeType.Replaced;
                 case MeStatusCodes.NotFoundPrevious:
                     return ErrorCodeType.NotFoundPrevious;
+                case MeStatusCodes.DisabledAsset:
+                    return ErrorCodeType.DisabledAsset;
+                case MeStatusCodes.InvalidVolumeAccuracy:
+                    return ErrorCodeType.InvalidVolumeAccuracy;
+                case MeStatusCodes.InvalidPriceAccuracy:
+                    return ErrorCodeType.InvalidPriceAccuracy;
+                case MeStatusCodes.InvalidVolume:
+                    return ErrorCodeType.InvalidVolume;
+                case MeStatusCodes.TooHighPriceDeviation:
+                    return ErrorCodeType.TooHighPriceDeviation;
+                case MeStatusCodes.InvalidOrderValue:
+                    return ErrorCodeType.InvalidOrderValue;
                 default:
                     _log.Warning(nameof(GetErrorCodeType), $"Unknown ME status code {code}",
                         context: nameof(MatchingEngineAdapter));

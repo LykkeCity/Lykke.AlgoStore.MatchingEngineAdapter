@@ -88,6 +88,15 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Strings {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Asset is Disabled.
+        /// </summary>
+        internal static string DisabledAsset {
+            get {
+                return ResourceManager.GetString("DisabledAsset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Duplicate.
         /// </summary>
         internal static string Duplicate {
@@ -124,11 +133,47 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Strings {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid Order Value.
+        /// </summary>
+        internal static string InvalidOrderValue {
+            get {
+                return ResourceManager.GetString("InvalidOrderValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid price.
         /// </summary>
         internal static string InvalidPrice {
             get {
                 return ResourceManager.GetString("InvalidPrice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid Price Accuracy.
+        /// </summary>
+        internal static string InvalidPriceAccuracy {
+            get {
+                return ResourceManager.GetString("InvalidPriceAccuracy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid Volume.
+        /// </summary>
+        internal static string InvalidVolume {
+            get {
+                return ResourceManager.GetString("InvalidVolume", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid Volume Accuracy.
+        /// </summary>
+        internal static string InvalidVolumeAccuracy {
+            get {
+                return ResourceManager.GetString("InvalidVolumeAccuracy", resourceCulture);
             }
         }
         
@@ -219,6 +264,15 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Strings {
         internal static string RuntimeErrorX {
             get {
                 return ResourceManager.GetString("RuntimeErrorX", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Too High Price Deviation.
+        /// </summary>
+        internal static string TooHighPriceDeviation {
+            get {
+                return ResourceManager.GetString("TooHighPriceDeviation", resourceCulture);
             }
         }
         

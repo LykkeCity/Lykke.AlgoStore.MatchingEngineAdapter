@@ -45,6 +45,18 @@ namespace Lykke.AlgoStore.MatchingEngineAdapter.Abstractions.Helpers
                     return ErrorMessages.BadRequest;
                 case ErrorCodeType.InvalidInputField:
                     return ErrorMessages.InvalidInputField;
+                case ErrorCodeType.DisabledAsset:
+                    return ErrorMessages.DisabledAsset;
+                case ErrorCodeType.InvalidVolumeAccuracy:
+                    return ErrorMessages.InvalidVolumeAccuracy;
+                case ErrorCodeType.InvalidPriceAccuracy:
+                    return ErrorMessages.InvalidPriceAccuracy;
+                case ErrorCodeType.InvalidVolume:
+                    return ErrorMessages.InvalidVolume;
+                case ErrorCodeType.TooHighPriceDeviation:
+                    return ErrorMessages.TooHighPriceDeviation;
+                case ErrorCodeType.InvalidOrderValue:
+                    return ErrorMessages.InvalidOrderValue;
                 default:
                     return string.Format(ErrorMessages.RuntimeErrorX, (int)code);
             }
